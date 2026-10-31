@@ -1,0 +1,51 @@
+[hidden]{display:none !important}
+:root{--bg:#fbfaf8;--fg:#1c1b1a;--muted:#6b6660;--line:#e7e2dc;--card:#fff;--accent:#d9480f;--accent-soft:#fff1e8;--tag:#f1efec}
+@media (prefers-color-scheme:dark){:root{--bg:#141312;--fg:#f2efeb;--muted:#a8a29b;--line:#2c2a27;--card:#1d1b19;--accent:#ff8a4c;--accent-soft:#2b1d14;--tag:#2a2725}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;-webkit-text-size-adjust:100%}
+a{color:inherit}
+main{max-width:860px;margin:0 auto;padding:0 16px 40px}
+.top{max-width:860px;margin:0 auto;padding:14px 16px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.brand{font-weight:800;font-size:20px;text-decoration:none;color:var(--accent)}
+.tagline{color:var(--muted);font-size:14px}
+.hero{padding:28px 0 8px}
+.hero h1{font-size:28px;line-height:1.3;margin:0 0 10px;letter-spacing:-.02em}
+.hero h1 span{color:var(--accent)}
+.hero.small h1{font-size:24px}
+.sub{color:var(--muted);margin:0 0 16px}
+.crumb{font-size:14px;color:var(--muted);margin:0 0 6px}
+#q{width:100%;padding:13px 14px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}
+.city h2{font-size:18px;margin:26px 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.tile{display:block;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card);text-decoration:none}
+.tile strong{display:block;font-size:17px}
+.tile span{display:block;color:var(--muted);font-size:13px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile:hover{border-color:var(--accent)}
+.how{margin-top:34px;padding:18px;border-radius:14px;background:var(--accent-soft)}
+.how h2{margin:0 0 8px;font-size:17px}.how ul{margin:0;padding-left:18px}.how li{margin:6px 0}
+.picker{margin:14px 0 6px;padding:18px;border-radius:16px;background:var(--accent-soft)}
+.picker h2{margin:0 0 4px;font-size:19px}.picker p{margin:0 0 12px;color:var(--muted);font-size:14px}
+button{font:inherit;cursor:pointer}
+#pick{padding:11px 18px;border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:700}
+.picked{margin:12px 0 0;padding-left:20px}.picked li{margin:8px 0}
+.picked a{font-weight:700;color:var(--accent)}
+.picked .why{display:block;color:var(--muted);font-size:13px}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:14px 0 6px;position:sticky;top:0;background:var(--bg);z-index:2}
+.filters button{flex:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:14px}
+.filters button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.list{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:10px}
+.card{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.card[hidden]{display:none}
+.card-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rank{font-weight:800;color:var(--accent);min-width:1.6em}
+.card h3{margin:0;font-size:17px}
+.cat{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.nums{margin:6px 0 2px}.nums strong{color:var(--accent)}
+.meta{margin:2px 0;color:var(--muted);font-size:14px}
+.tag{display:inline-block;margin:6px 6px 0 0;padding:2px 9px;border-radius:999px;background:var(--tag);font-size:12px}
+.go{display:inline-block;margin-top:10px;font-weight:700;color:var(--accent);text-decoration:none}
+.go:hover{text-decoration:underline}
+footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+.inapp{position:sticky;top:0;z-index:5;padding:10px 16px;background:var(--fg);color:var(--bg);font-size:14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.inapp button{white-space:nowrap;flex:none;border:0;border-radius:999px;padding:6px 12px;background:var(--accent);color:#fff;font-weight:700}
+.inapp .x{background:transparent;color:var(--bg);padding:6px}
