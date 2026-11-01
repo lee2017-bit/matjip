@@ -64,3 +64,16 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);text-decoration:none;font-size:14px}
 .chip:hover{border-color:var(--accent)}.chip.pick{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.note{display:inline-block;margin:4px 0 2px;padding:2px 8px;border-radius:8px;background:var(--tag);color:var(--muted);font-size:12px;line-height:1.5}
+.note::before{content:"🔊 "}
+.actions{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.actions .go{margin-top:0}
+.share{margin-left:auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font-size:13px}
+.share::before{content:"↗ "}
+.share:hover{border-color:var(--accent);color:var(--accent)}
+.share-page{margin-top:2px;padding:8px 14px;border:1px solid var(--accent);border-radius:999px;background:var(--card);color:var(--accent);font-size:14px;font-weight:700}
+.share-page::before{content:"↗ "}
+#pick-share{margin-top:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;z-index:10;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.shared{margin-top:12px;padding:12px;border:2px solid var(--accent);border-radius:16px;background:var(--accent-soft)}
+.shared-title{margin:0 0 4px;font-weight:800;color:var(--accent)}

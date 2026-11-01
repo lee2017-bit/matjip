@@ -203,7 +203,24 @@ def holidays(days) -> str:
     return "휴무 " + "·".join(days) + "요일" if days else "휴무일 없음"
 
 
-def card(r: dict, rank: int, show_area: str = "") -> str:
+def is_busy(r: dict) -> bool:
+    """아주 붐비는 집: 전국 같은 업종 매출 상위 0.5% 이내, 또는 1% 이내이면서 회식(단체) 결제가 있는 곳 (전체의 약 5%).
+    Keep in sync with isBusy() in src/app.js."""
+    try:
+        p = float(r.get("allSaleRnk"))
+    except (TypeError, ValueError):
+        return False
+    return p <= 0.5 or (p <= 1 and bool(r.get("empyVsitYn")))
+
+
+BUSY_NOTE = "아주 붐비는 집 · 점수는 높지만 소개팅에는 다소 시끄러울 수 있어요"
+
+
+def mer_id(url) -> str:
+    return str(url or "").rstrip("/").rsplit("/", 1)[-1]
+
+
+def card(r: dict, rank: int) -> str:
     cat = r.get("merTpbuzNm") or "기타"
     g = GROUP_OF.get(cat, "etc")
     lunch = open_for_lunch(r.get("srtTime") or "", r.get("endTime") or "") and g not in ("drink", "cafe")
@@ -216,21 +233,22 @@ def card(r: dict, rank: int, show_area: str = "") -> str:
             tags.append(f'<span class="tag">{t}</span>')
     cust = r.get("vistCstmrRnkList") or {}
     cust_txt = ", ".join(v for v in (cust.get("rk01"), cust.get("rk02"), cust.get("rk03")) if v)
-    busy = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
+    peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
+    busy = is_busy(r)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
-                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick"))) if on)
+                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
-    where = f'<p class="meta where">{esc(show_area)}</p>' if show_area else ""
-    return f"""<li class="card" data-f="{esc(flags)}" data-g="{gs}" data-c="{esc(city_of(r.get('merAddr')))}">
+    note = f'<p class="note">{BUSY_NOTE}</p>' if busy else ""
+    return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-c="{esc(city_of(r.get('merAddr')))}">
   <div class="card-head"><span class="rank">{rank}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
   <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
-  {where}<p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
-  <p class="meta">{esc(short_addr(r.get('merAddr')))}</p>
-  <p class="meta">{'영업 예상 ' + esc(hrs) + ' · ' if hrs else ''}{esc(holidays(r.get('hldyDwk')))}{(' · 붐비는 때 ' + esc(busy)) if busy else ''}</p>
+  <p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
+  {note}<p class="meta">{esc(short_addr(r.get('merAddr')))}</p>
+  <p class="meta">{'영업 예상 ' + esc(hrs) + ' · ' if hrs else ''}{esc(holidays(r.get('hldyDwk')))}{(' · 붐비는 때 ' + esc(peak)) if peak else ''}</p>
   {f'<p class="meta">주 고객 {esc(cust_txt)}</p>' if cust_txt else ''}
   {''.join(tags)}
-  <a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 자세히 보기 →</a>
+  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 자세히 보기 →</a><button type="button" class="share">공유</button></div>
 </li>"""
 
 
@@ -348,12 +366,14 @@ def main():
   <p class="crumb"><a href="../index.html">전체 지역</a> › {esc(a['city'])}</p>
   <h1>{esc(a['name'])} 점심·회식 맛집 <span>매출점수 순위</span></h1>
   <p class="sub">BC카드 최근 1개월 결제 기준 매출 상위 {len(items)}곳 · {esc(updated)} 업데이트</p>
+  <button type="button" class="share-page">이 동네 순위 공유하기</button>
 </section>
 <section class="picker" id="picker">
   <h2>오늘 점심 뭐 먹지?</h2>
   <p>이 동네 점심 영업하는 매출 상위 집 중에서 3곳을 골라 드려요.</p>
   <button type="button" id="pick">3곳 뽑기</button>
   <ol id="picked" class="picked"></ol>
+  <button type="button" id="pick-share" class="share-page" hidden>이 3곳 팀에 공유하기</button>
 </section>
 {list_section(cards, present)}"""
         title = f"{a['name']} 점심·회식 맛집 매출 순위 TOP {len(items)} | {SITE_NAME}"
@@ -380,6 +400,7 @@ def main():
   <p class="crumb"><a href="../index.html">홈</a> › 종류별 순위</p>
   <h1>{esc(name)} 맛집 <span>매출점수 TOP {len(rows)}</span></h1>
   <p class="sub">이 사이트가 모은 {len(places):,}곳 중 {esc(name)} 업종을 매출점수 순으로 모았습니다.</p>
+  <button type="button" class="share-page">이 순위 공유하기</button>
 </section>
 {list_section(cards, {key}, cities, default=key)}"""
         title = f"{name} 맛집 매출 순위 TOP {len(rows)} | {SITE_NAME}"
@@ -398,6 +419,7 @@ def main():
   <p class="crumb"><a href="index.html">홈</a> › 주인장 픽</p>
   <h1>주인장 픽 <span>{len(prows)}곳</span></h1>
   <p class="sub">이 사이트를 만든 사람이 오래전부터 지도에 모아 온 맛집 중 eat.pl 데이터가 있는 곳입니다. 가성비 집, 데이트 코스, 유명한 집이 섞여 있어요. 평균 매출점수 {avg}점.</p>
+  <button type="button" class="share-page">주인장 픽 공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prows}, cities, default="")}"""
         (OUT / "picks.html").write_text(page(f"주인장 픽 — 직접 모은 맛집 {len(prows)}곳의 매출점수 | {SITE_NAME}",
@@ -406,7 +428,7 @@ def main():
 
     # ---- search index (loaded lazily by the home page search box)
     index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
-              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0]
+              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
         {"areas": area_name, "groups": GROUP_NAME, "places": index}, ensure_ascii=False, separators=(",", ":")))
@@ -439,6 +461,7 @@ def main():
     <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 95점 안팎, 1%면 86점, 10%면 68점 정도예요.</li>
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
+    <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 소개팅처럼 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
   </ul>
 </section>"""
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"

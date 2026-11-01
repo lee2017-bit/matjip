@@ -26,6 +26,50 @@
   }
   function grade(s) { return s >= 90 ? '전국구' : s >= 80 ? '찐맛집' : s >= 70 ? '동네 강자' : s >= 60 ? '꾸준한 집' : '숨은 집'; }
   function pct(v) { var f = parseFloat(v); return isNaN(f) ? '-' : (f < 1 ? f.toFixed(2) : f.toFixed(1)); }
+  // 아주 붐비는 집 (same rule as is_busy in build.py)
+  function isBusy(all, group) { var p = parseFloat(all); return !isNaN(p) && (p <= 0.5 || (p <= 1 && !!group)); }
+  var BUSY_NOTE = '아주 붐비는 집 · 점수는 높지만 소개팅에는 다소 시끄러울 수 있어요';
+  var MER = 'https://web.paybooc.ai/mer/web/profile/';
+
+  // ---------------------------------------------------------------- sharing
+  // Shared links always point at this site (registered hostname), never at eat.pl directly:
+  // the friend opens our page and clicks through to eat.pl from here.
+  var BASE = new URL(ROOT || './', location.href).href;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+  function share(title, text, url) {
+    if (navigator.share) { navigator.share({ title: title, text: text, url: url }).catch(function () {}); return; }
+    var full = text + '\n' + url;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(full).then(function () { toast('링크를 복사했어요. 카톡이나 메신저에 붙여 넣어 보내 보세요.'); },
+        function () { window.prompt('이 링크를 복사해 보내세요', url); });
+    } else {
+      window.prompt('이 링크를 복사해 보내세요', url);
+    }
+  }
+  function cardInfo(c) {
+    return { name: c.querySelector('h3').textContent, score: c.querySelector('.score b').textContent, grade: c.querySelector('.score small').textContent };
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button.share') : null;
+    if (!b) return;
+    var c = b.closest('.card');
+    var i = cardInfo(c);
+    var id = (c.id || '').replace(/^p-/, '');
+    var url = BASE + (c.getAttribute('data-q') ? '#q=' + encodeURIComponent(c.getAttribute('data-q')) : '#p=' + id);
+    share(i.name + ' 매출점수 ' + i.score + '점', i.name + ' 매출점수 ' + i.score + '점(' + i.grade + ') — 별점 말고 BC카드 결제 매출로 매긴 맛집 점수예요. 내가 아는 집은 몇 점일까?', url);
+  });
+  document.querySelectorAll('button.share-page:not(#pick-share)').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var h1 = document.querySelector('h1');
+      var title = h1 ? h1.textContent.replace(/\s+/g, ' ').trim() : document.title;
+      share(title, title + ' — 별점 말고 BC카드 결제 매출로 고른 맛집 순위예요.', location.href.split('#')[0]);
+    });
+  });
 
   // ---------------------------------------------------------------- list filters
   var list = document.getElementById('list');
@@ -64,7 +108,41 @@
 
   // ---------------------------------------------------------------- "오늘 점심 뭐 먹지?" picker
   var pick = document.getElementById('pick');
+  var pickShare = document.getElementById('pick-share');
+  var picked = [];
+  function showPicked(cards) {
+    var out = document.getElementById('picked');
+    out.innerHTML = '';
+    picked = cards;
+    cards.forEach(function (c) {
+      var a = c.querySelector('a.go');
+      var li = document.createElement('li');
+      var link = document.createElement('a');
+      link.href = a.href; link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = c.querySelector('h3').textContent + ' (' + c.querySelector('.cat').textContent + ')';
+      var why = document.createElement('span');
+      why.className = 'why';
+      why.textContent = '매출점수 ' + c.querySelector('.score b').textContent + '점 · ' + c.querySelector('.nums').textContent;
+      li.appendChild(link); li.appendChild(why); out.appendChild(li);
+    });
+    if (pickShare) pickShare.hidden = !cards.length;
+    pick.textContent = '다시 뽑기';
+  }
+  if (pickShare) {
+    pickShare.addEventListener('click', function () {
+      var names = picked.map(function (c) { return cardInfo(c).name + '(' + cardInfo(c).score + '점)'; });
+      var ids = picked.map(function (c) { return c.id.replace(/^p-/, ''); });
+      var area = (document.querySelector('h1').firstChild.textContent || '').replace('점심·회식 맛집', '').trim();
+      share('오늘 점심 후보 3곳', '오늘 ' + area + ' 점심 후보: ' + names.join(', ') + ' — 카드 매출 상위 집 중에서 뽑았어요. 어디 갈까요?',
+        location.href.split('#')[0] + '#pick=' + ids.join(','));
+    });
+  }
   if (pick && list) {
+    var hp = /#pick=([^&]+)/.exec(location.hash);
+    if (hp) {
+      var fromHash = hp[1].split(',').map(function (id) { return document.getElementById('p-' + id); }).filter(Boolean);
+      if (fromHash.length) { showPicked(fromHash); document.getElementById('picker').scrollIntoView(); }
+    }
     pick.addEventListener('click', function () {
       var cards = Array.prototype.slice.call(list.querySelectorAll('.card'));
       var pool = cards.filter(function (c) {
@@ -72,20 +150,7 @@
       }).slice(0, 40);
       if (pool.length < 3) pool = cards.slice(0, 40);
       for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-      var out = document.getElementById('picked');
-      out.innerHTML = '';
-      pool.slice(0, 3).forEach(function (c) {
-        var a = c.querySelector('a.go');
-        var li = document.createElement('li');
-        var link = document.createElement('a');
-        link.href = a.href; link.target = '_blank'; link.rel = 'noopener';
-        link.textContent = c.querySelector('h3').textContent + ' (' + c.querySelector('.cat').textContent + ')';
-        var why = document.createElement('span');
-        why.className = 'why';
-        why.textContent = '매출점수 ' + c.querySelector('.score b').textContent + '점 · ' + c.querySelector('.nums').textContent;
-        li.appendChild(link); li.appendChild(why); out.appendChild(li);
-      });
-      pick.textContent = '다시 뽑기';
+      showPicked(pool.slice(0, 3));
     });
   }
 
@@ -108,8 +173,10 @@
   }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function placeCard(p) {
-    // p: {name, cat, addr, score, all, ccg, url, area, pick, note}
+    // p: {name, cat, addr, score, all, ccg, url, area, pick, busy, note, q}
     var li = el('li', 'card');
+    li.id = 'p-' + String(p.url || '').split('/').pop();
+    if (p.q) li.setAttribute('data-q', p.q);
     var head = el('div', 'card-head');
     head.appendChild(el('h3', '', p.name));
     head.appendChild(el('span', 'cat', p.cat || '기타'));
@@ -119,6 +186,7 @@
     if (p.note) li.appendChild(el('p', 'meta where', p.note));
     var nums = el('p', 'nums'); nums.appendChild(el('strong', '', '전국 같은 업종 매출 상위 ' + pct(p.all) + '%')); nums.appendChild(document.createTextNode(' · 구 안에서 상위 ' + pct(p.ccg) + '%'));
     li.appendChild(nums);
+    if (p.busy) li.appendChild(el('p', 'note', BUSY_NOTE));
     var m = el('p', 'meta', p.addr || '');
     if (p.area && data && data.areas[p.area]) {
       m.appendChild(document.createTextNode(' · '));
@@ -126,11 +194,14 @@
     }
     li.appendChild(m);
     if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
+    var act = el('div', 'actions');
     var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
-    li.appendChild(go);
+    act.appendChild(go);
+    var sb = el('button', 'share', '공유'); sb.type = 'button'; act.appendChild(sb);
+    li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : 'https://web.paybooc.ai/mer/web/profile/') + p[7], area: p[8], pick: p[9] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10] }; }
 
   function liveButton(term, box) {
     if (!API) {
@@ -148,7 +219,8 @@
           if (!x.item || !x.item.merUrl) return;
           var it = x.item; found++;
           ul.appendChild(placeCard({ name: x.place && x.place.name || it.merNm, cat: it.merTpbuzNm, addr: x.place && x.place.addr || it.merAddr,
-            score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과' }));
+            score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과',
+            busy: isBusy(it.allSaleRnk, it.empyVsitYn), q: term }));
         });
         b.remove();
         if (found) box.appendChild(ul);
@@ -199,8 +271,29 @@
   if (q) {
     q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 180); });
     q.addEventListener('focus', load, { once: true });
-    var m = /[?&]q=([^&]+)/.exec(location.search);
-    if (m) { try { q.value = decodeURIComponent(m[1].replace(/\+/g, ' ')); search(); } catch (e) { /* ignore */ } }
+    var fromUrl = function () {
+      var hp = /#p=([^&]+)/.exec(location.hash);
+      var hq = /[#?&]q=([^&]+)/.exec(location.hash) || /[?&]q=([^&]+)/.exec(location.search);
+      if (hp) { showShared(hp[1]); return; }
+      if (hq) { try { q.value = decodeURIComponent(hq[1].replace(/\+/g, ' ')); search(); } catch (e) { /* ignore */ } }
+    };
+    window.addEventListener('hashchange', fromUrl);
+    fromUrl();
+  }
+  // a friend shared one place: show it on top, then invite them to search their own
+  function showShared(id) {
+    load().then(function (d) {
+      var p = null;
+      for (var i = 0; i < d.places.length; i++) if (d.places[i][7] === id) { p = d.places[i]; break; }
+      results.innerHTML = '';
+      if (!p) { results.appendChild(el('p', 'hint', '공유받은 가게를 찾지 못했어요. 이름으로 검색해 보세요.')); return; }
+      var box = el('div', 'shared');
+      box.appendChild(el('p', 'shared-title', '공유받은 맛집'));
+      var ul = el('ol', 'list'); ul.appendChild(placeCard(fromIndex(p))); box.appendChild(ul);
+      box.appendChild(el('p', 'hint', '내가 아는 집은 몇 점일까요? 위 검색창에 가게 이름을 입력해 보세요.'));
+      results.appendChild(box);
+      document.getElementById('search').scrollIntoView();
+    });
   }
 
   // ---------------------------------------------------------------- in-app browser notice
