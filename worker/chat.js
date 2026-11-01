@@ -14,6 +14,7 @@
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
 const DAILY_LIMIT = { parse: 30, answer: 40 };
+const PROMPT_V = 'v2';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -33,7 +34,8 @@ const ANSWER_SYS = `너는 맛집 사이트 '매출맛집'의 추천 도우미�
 - i는 후보 번호. 목록에 없는 가게는 절대 말하지 않는다.
 - 메뉴 이름·가격·별점·맛 평가처럼 목록에 없는 사실을 지어내지 않는다. 업종·거리·매출점수·태그·영업시간만 근거로 쓴다. 업종에서 짐작되는 정도(찜/탕/찌개 → 따뜻한 국물)는 괜찮다.
 - 매출점수는 BC카드 결제 매출 순위로 매긴 0~100점이다(맛 평가가 아님). 높을수록 손님이 많이 찾는 집이다.
-- '주인장 픽'은 사이트 주인이 직접 모아 둔 맛집, '주인장 취향'은 주인장 픽과 특징이 비슷한 집이다. 상황에 맞으면 먼저 고려한다.
+- '주인장 픽'은 사이트 주인이 직접 다니며 모아 둔 맛집, '주인장 취향'은 주인장 픽과 특징이 비슷한 집이다.
+  후보에 '주인장 픽'이 있으면 상황에 크게 어긋나지 않는 한 1곳 이상 넣고, why에 주인장 픽이라고 밝힌다. 나머지는 가까운 곳과 섞는다.
 - 거리를 고려한다. 2km가 넘으면 차로 가기 좋은 거리라고 말해도 된다. 시간 계산은 하지 않는다.
 - 업종이 서로 겹치지 않게 고르면 좋다.
 - why: 상황에 맞는 이유 한 문장(45자 이내, 해요체).
@@ -55,7 +57,7 @@ export async function chat(request, env, ctx, cors) {
   if (q.length < 4) return json({ message: '조금 더 자세히 물어봐 주세요.' }, 400, cors);
 
   const cache = caches.default;
-  const key = new Request('https://cache.matjip/chat/' + step + '/' + await sha(step === 'parse' ? q : JSON.stringify([q, body.place && body.place.name, (body.cands || []).map(c => c && c.n)])));
+  const key = new Request('https://cache.matjip/chat/' + PROMPT_V + '/' + step + '/' + await sha(step === 'parse' ? q : JSON.stringify([q, body.place && body.place.name, (body.cands || []).map(c => c && c.n)])));
   const hit = await cache.match(key);
   if (hit) return withHeaders(hit, cors);
 
