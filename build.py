@@ -315,9 +315,9 @@ def is_busy(r: dict) -> bool:
     return p <= 0.5 or (p <= 1 and bool(r.get("empyVsitYn")))
 
 
-BUSY_NOTE = "아주 붐비는 집 · 홀은 대화하기엔 시끄러울 수 있어요"
-BUSY_ROOM_GROUP = "단체석·룸이 있을 가능성이 높으니 예약 때 물어보세요"
-BUSY_ROOM = "조용한 자리라면 룸이 있는지 확인해 보세요"
+BUSY_NOTE = "붐비는 집이라 홀은 시끄러울 수 있어요"
+BUSY_ROOM_GROUP = "룸은 예약 때 물어보세요"
+BUSY_ROOM = ""
 
 # 대화하기 좋은 곳: 결제 데이터로 추정한 '조용히 이야기 나누기 좋은 집' (전체의 약 6%)
 TALK_CATS = {"이탈리아음식", "프랑스음식", "기타외국식", "아시안", "멕시칸", "스시/초밥", "기타일식", "브런치카페/샐러드", "바(bar)"}
@@ -611,8 +611,8 @@ def card(r: dict, rank: int) -> str:
         more.append(f'<p class="note busy">{BUSY_NOTE}{(" · " + room) if room else ""}</p>')
     if premium and s < 75:
         rk = r.get("_prem_rank")
-        more.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
-                    + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
+        more.append('<p class="note premium">소규모 고급 업장이라 점수가 낮게 나와요'
+                    + (f' (고급 {rk[1]}곳 중 {rk[0]}위)' if rk else '') + '</p>')
     more.append(f"<p>{esc(short_addr(r.get('merAddr')))}</p>")
     kq = urllib.parse.quote(f"{r.get('_name') or clean_name(r.get('merNm'))} {where_short(r.get('merAddr'))}")
     more.append(f'<p><a class="kakao" href="https://map.kakao.com/link/search/{kq}" target="_blank" rel="noopener">카카오맵에서 보기 (사진·리뷰)</a></p>')
@@ -658,8 +658,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 <nav class="topnav"><a href="{up}map.html">지도</a><a href="{up}areas.html">동네별</a>{f'<a href="{up}ask.html">물어보기</a>' if LOOKUP_API else ''}</nav></header>
 <main>{body}</main>
 <footer>
-<p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong>. 매출점수는 최근 1개월 같은 업종 매출 순위를 0~100점으로 바꾼 값으로, 맛 평가가 아니에요. 영업시간은 결제 시각으로 추정한 값이에요.</p>
-<p>이 사이트는 BC카드나 eat.pl의 공식 서비스가 아닙니다.</p>
+<p><strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong> · BC카드·eat.pl 공식 서비스 아님</p>
 </footer>
 <script src="{up}assets/app.js?v={ASSET_V}"></script>
 </body></html>"""
@@ -862,12 +861,11 @@ def main():
     if prows:
         cities = sorted({city_of(r.get("merAddr")) for r in prows}, key=lambda c: -sum(1 for r in prows if city_of(r.get("merAddr")) == c))
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(prows))
-        avg = round(sum(r["_score"] for r in prows) / len(prows))
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 주인장 픽</p>
   <h1>주인장 픽 {len(prows)}곳</h1>
-  <p class="sub">만든 사람이 오래 모아 온 맛집 · 평균 {avg}점</p>
+  <p class="sub">주인장이 모아 온 맛집</p>
   <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prows}, cities, default="", chain_default="")}"""
@@ -885,7 +883,7 @@ def main():
   <p class="crumb"><a href="index.html">홈</a> › 대화하기 좋은 곳</p>
   <h1>대화하기 좋은 곳</h1>
   <p class="sub">소개팅·데이트·오랜만의 모임에</p>
-  <details class="about"><summary>어떻게 골랐나요?</summary><p>양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 손님이 몰리는 최상위 집과 체인·쇼핑몰 매장은 빼고, 저녁까지 영업하며 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 넣었어요. 실제 소음을 잰 건 아니에요.</p></details>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>양식·일식·바 중 회식이 없고 붐비지 않으며 20~30대 손님이 많은 곳이에요. 소음을 잰 건 아니에요.</p></details>
   <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in trows}, cities, purpose=False, default="")}"""
@@ -898,13 +896,12 @@ def main():
     if tsrows:
         cities = sorted({city_of(r.get("merAddr")) for r in tsrows}, key=lambda c: -sum(1 for r in tsrows if city_of(r.get("merAddr")) == c))
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(tsrows))
-        n_hidden = sum(1 for r in tsrows if r["_score"] < 70)
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 주인장 취향</p>
   <h1>주인장 취향 추천</h1>
-  <p class="sub">주인장 맛집과 닮은 단독 식당 · 숨은 집 {n_hidden}곳 포함</p>
-  <details class="about"><summary>어떻게 골랐나요?</summary><p>주인장 맛집 {len(prows)}곳과 같은 건물의 다른 가게를 비교해 고르는 기준을 배웠어요. 프랜차이즈가 아니고, 동네 주민보다 찾아오는 손님이 많고, 주말에도 열고, 저녁에 붐비는 집일수록 높아요. 매출점수와는 따로 계산해서 70점 미만 숨은 집도 나와요. 한 사람의 취향이라 참고로만 봐 주세요.</p></details>
+  <p class="sub">주인장 픽과 닮은 단독 식당</p>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>프랜차이즈가 아니고, 찾아오는 손님이 많고, 주말·저녁에 붐비는 집이에요. 매출점수와 따로 계산해요.</p></details>
   <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in tsrows}, cities, default="", extra=[("hidden", "70점 미만 숨은 집")])}"""
@@ -921,7 +918,7 @@ def main():
   <p class="crumb"><a href="index.html">홈</a> › 고급·가격대 있는 집</p>
   <h1>고급 맛집</h1>
   <p class="sub">오마카세·파인다이닝·비스트로·한우</p>
-  <details class="about"><summary>어떻게 골랐나요?</summary><p>결제 데이터엔 가격이 없어서 가게 이름·업종·영업 시간으로 추정했어요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서, 여기서는 고급 업장끼리 매출 순으로 줄 세웠어요. 체인과 쇼핑몰 매장은 뺐어요.</p></details>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>가격 정보가 없어 가게 이름·업종·영업시간으로 추정했어요.</p></details>
   <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prem}, cities, purpose=False, default="")}"""
@@ -951,7 +948,6 @@ def main():
 <div class="map-listhead"><p class="count" id="map-count"></p>
 <nav class="filters sortnav" id="map-sort" aria-label="정렬" hidden><button type="button" data-v="score" class="on">점수순</button><button type="button" data-v="dist">가까운 순</button></nav></div>
 <ol class="list" id="map-list"></ol>
-<p class="small-note sub">지도 © OpenStreetMap 기여자. 가게 위치는 결제 데이터의 좌표라 실제 입구와 수십 m 다를 수 있어요.</p>
 """)
     html_map = page(f"내 주변 맛집 지도 — 매출점수로 보는 동네 맛집 | {SITE_NAME}",
                     "지도에서 화면 안 매출점수 높은 집을 보고, 내 위치 주변 맛집을 가까운 순으로. BC카드 결제 데이터 기반.",
@@ -970,7 +966,7 @@ def main():
         body = f"""
 <section class="hero small ask-hero">
   <h1>뭐 먹을지 <span>물어보기</span></h1>
-  <p class="sub">장소·시간·상황을 말하면 근처 매출 상위 집 중에서 골라 드려요. 소개팅·데이트는 20~30대 여성 손님이 많은 곳만 골라요</p>
+  <p class="sub">장소·시간·상황을 말하면 골라 드려요</p>
 </section>
 <form id="ask-form" class="ask-form" autocomplete="off">
   <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 딥스테이션에서 5시까지 다이빙하고 뭐 먹지?" aria-label="질문"></textarea>
@@ -1040,8 +1036,8 @@ def main():
   <input id="q" type="search" placeholder="가게 이름 검색" aria-label="가게 이름 검색" autocomplete="off">
   <div id="results" class="results" aria-live="polite"></div>
   <div class="home-extra">
-    <a class="near-big" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집</b><small>지금 위치 근처 매출 상위 집을 지도로</small></a>
-    {'<a class="home-more" href="ask.html">상황을 말하면 골라 드려요 · AI에게 물어보기 →</a>' if LOOKUP_API else ''}
+    <a class="near-big" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집</b></a>
+    {'<a class="home-more" href="ask.html">AI에게 물어보기 →</a>' if LOOKUP_API else ''}
     <a class="home-more" href="areas.html">동네별 · 종류별 순위 보기 →</a>
   </div>
 </section>"""
@@ -1062,14 +1058,12 @@ def main():
 <details class="how">
   <summary>점수는 이렇게 읽어요</summary>
   <ul>
-    <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 96점, 1%면 89점, 10%면 77점, 40%면 61점 정도예요.</li>
-    <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
-    <li><strong>손님 연령 필터</strong> — 결제 고객 중 많은 연령·성별 1·2위를 기준으로 걸러요. "20~30대가 많이 가는 곳"은 1·2위가 모두 20~30대인 곳(전체의 약 38%)이에요. 성별도 같은 방식으로, 1·2위가 모두 여성이면 "여성 손님 위주"(약 20%), 모두 남성이면 "남성 손님 위주"(약 44%), 섞여 있으면 "남녀 고루"예요.</li>
-    <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
-    <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
-    <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 포함해요. <a href="talk.html">모아 보기</a></li>
-    <li><strong>주인장 취향</strong> — 주인장 맛집과 같은 건물의 다른 가게를 비교해 배운 기준(프랜차이즈 아님, 찾아오는 손님, 주말 영업, 저녁 손님 등)에 잘 맞는 상위 10%예요. 매출점수가 낮아도 표시돼요. <a href="taste.html">모아 보기</a></li>
-    <li><strong>고급 추정</strong> — 오마카세·파인다이닝·비스트로·한우 등 가격대가 있어 보이는 집이에요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서 고급 업장끼리 순위를 따로 보여 드려요. <a href="premium.html">모아 보기</a></li>
+    <li><strong>매출점수</strong> — 같은 업종 안 매출 순위(전국 75%·구 안 25%)를 0~100점으로. 맛이 아니라 판매량이에요.</li>
+    <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong></li>
+    <li><strong>손님 연령·성별</strong> — 결제 고객 1·2위 기준이에요.</li>
+    <li><strong>대화하기 좋은 곳 · 고급</strong> — 업종·이름·손님층으로 추정했어요.</li>
+    <li><strong>주인장 취향</strong> — 주인장 픽과 특징이 닮은 단독 식당이에요.</li>
+    <li>영업시간은 결제 시각으로 추정했어요.</li>
   </ul>
 </details>"""
     (OUT / "areas.html").write_text(page(f"동네별·종류별 맛집 매출 순위 — {len(built_areas)}개 동네 | {SITE_NAME}",

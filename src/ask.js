@@ -154,7 +154,7 @@
     go.disabled = true; out.innerHTML = '';
     var qline = el('p', 'ask-q-line', q); out.appendChild(qline);
     status('질문을 읽는 중…');
-    var slow = setTimeout(function () { if (out.querySelector('.ask-status')) status('AI가 생각하는 중이에요… 처음 물어볼 때는 20초쯤 걸리기도 해요'); }, 8000);
+    var slow = setTimeout(function () { if (out.querySelector('.ask-status')) status('AI가 생각하는 중… (20초쯤 걸릴 수 있어요)'); }, 8000);
     var loadData = M.load();
     var parsed = here ? Promise.resolve({ intent: here.intent, place: { name: '내 위치', lat: here.lat, lng: here.lng, addr: '' } }) : withTimeout(post({ step: 'parse', q: q }), 45000);
     parsed.then(function (r) {
@@ -182,7 +182,7 @@
   function askWhere(q, intent) {
     out.innerHTML = '';
     out.appendChild(el('p', 'ask-q-line', q));
-    out.appendChild(el('p', 'hint', '어느 근처인지 질문에서 찾지 못했어요. 장소(역·건물·동네 이름)를 넣어 다시 물어보거나, 내 위치 근처로 찾아볼게요.'));
+    out.appendChild(el('p', 'hint', '어느 근처인지 알려 주세요. 장소를 넣어 다시 묻거나 내 위치로 찾을 수 있어요.'));
     if (navigator.geolocation) {
       var b = el('button', 'live', '📍 내 위치 근처로 찾기'); b.type = 'button';
       b.onclick = function () {

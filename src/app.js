@@ -29,9 +29,9 @@
   // 아주 붐비는 집 (same rule as is_busy in build.py)
   function isBusy(all, group) { var p = parseFloat(all); return !isNaN(p) && (p <= 0.5 || (p <= 1 && !!group)); }
   // keep in sync with BUSY_NOTE / BUSY_ROOM* and is_premium() in build.py
-  var BUSY_NOTE = '아주 붐비는 집 · 홀은 대화하기엔 시끄러울 수 있어요';
-  var BUSY_ROOM_GROUP = '단체석·룸이 있을 가능성이 높으니 예약 때 물어보세요';
-  var BUSY_ROOM = '조용한 자리라면 룸이 있는지 확인해 보세요';
+  var BUSY_NOTE = '붐비는 집이라 홀은 시끄러울 수 있어요';
+  var BUSY_ROOM_GROUP = '룸은 예약 때 물어보세요';
+  var BUSY_ROOM = '';
   var PREMIUM_KW = /오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|(^|[^타])코스|한우|와규|wagyu|스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|셰프|chef|chez|레스토랑|restaurant|스키야키|한정식/i;
   var PREMIUM_NOT = /정육|해장|곱창|국밥|순대|분식|뷔페|식당$/;
   var CHAIN = /(?:^|[^본])점(\)|$)|지점|신세계|현대백화점|롯데|몰|타임스퀘어|스타필드|아이파크|코엑스/;
@@ -323,8 +323,8 @@
     li.appendChild(act);
     var more = el('details', 'more'); more.appendChild(el('summary', '', '자세히'));
     more.appendChild(el('p', 'nums', '전국 같은 업종 매출 상위 ' + pct(p.all) + '% · 구 안에서 상위 ' + pct(p.ccg) + '%'));
-    if (p.busy) more.appendChild(el('p', 'note busy', BUSY_NOTE + ' · ' + (p.group ? BUSY_ROOM_GROUP : BUSY_ROOM)));
-    if (p.premium && p.score < 75) more.appendChild(el('p', 'note premium', '가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'));
+    if (p.busy) more.appendChild(el('p', 'note busy', BUSY_NOTE + (p.group ? ' · ' + BUSY_ROOM_GROUP : '')));
+    if (p.premium && p.score < 75) more.appendChild(el('p', 'note premium', '소규모 고급 업장이라 점수가 낮게 나와요'));
     more.appendChild(el('p', '', p.addr || ''));
     var kp = el('p'), ka = el('a', 'kakao', '카카오맵에서 보기 (사진·리뷰)');
     var w2 = String(p.addr || '').split(/\s+/); if (w2.length && w2[0].indexOf('세종') !== 0) w2.shift();
@@ -455,7 +455,7 @@
       var box = el('div', 'shared');
       box.appendChild(el('p', 'shared-title', '공유받은 맛집'));
       var ul = el('ol', 'list'); ul.appendChild(placeCard(fromIndex(p))); box.appendChild(ul);
-      box.appendChild(el('p', 'hint', '내가 아는 집은 몇 점일까요? 위 검색창에 가게 이름을 입력해 보세요.'));
+      box.appendChild(el('p', 'hint', '내가 아는 집도 검색해 보세요.'));
       results.appendChild(box);
       document.getElementById('search').scrollIntoView();
     });
