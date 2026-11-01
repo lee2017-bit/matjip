@@ -326,6 +326,10 @@
     if (p.busy) more.appendChild(el('p', 'note busy', BUSY_NOTE + ' · ' + (p.group ? BUSY_ROOM_GROUP : BUSY_ROOM)));
     if (p.premium && p.score < 75) more.appendChild(el('p', 'note premium', '가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'));
     more.appendChild(el('p', '', p.addr || ''));
+    var kp = el('p'), ka = el('a', 'kakao', '카카오맵에서 보기 (사진·리뷰)');
+    var w2 = String(p.addr || '').split(/\s+/); if (w2.length && w2[0].indexOf('세종') !== 0) w2.shift();
+    ka.href = 'https://map.kakao.com/link/search/' + encodeURIComponent(p.name + ' ' + w2.slice(0, 2).join(' '));
+    ka.target = '_blank'; ka.rel = 'noopener'; kp.appendChild(ka); more.appendChild(kp);
     li.appendChild(more);
     return li;
   }

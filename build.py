@@ -607,6 +607,8 @@ def card(r: dict, rank: int) -> str:
         more.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
                     + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
     more.append(f"<p>{esc(short_addr(r.get('merAddr')))}</p>")
+    kq = urllib.parse.quote(f"{r.get('_name') or clean_name(r.get('merNm'))} {where_short(r.get('merAddr'))}")
+    more.append(f'<p><a class="kakao" href="https://map.kakao.com/link/search/{kq}" target="_blank" rel="noopener">카카오맵에서 보기 (사진·리뷰)</a></p>')
     sub = " · ".join(x for x in (f'<span class="cat">{esc(r.get("_catlabel") or cat)}</span>', esc(where_short(r.get("merAddr"))), esc(hrs)) if x)
     tag_html = "".join(f'<span class="t {k}">{esc(t)}</span>' for k, t in tags)
     return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-k="{'chain' if chain else 'indie'}" data-c="{esc(city_of(r.get('merAddr')))}">
