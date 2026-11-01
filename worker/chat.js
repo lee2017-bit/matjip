@@ -14,16 +14,19 @@
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
 const DAILY_LIMIT = { parse: 30, answer: 40 };
-const PROMPT_V = 'v4';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+// 소개팅·데이트 자리 (AI가 놓쳐도 이 말이 있으면): 사이트가 20~30대 여성 손님이 많은 곳만 후보로 보낸다
+const DATE_RE = /소개팅|데이트|썸녀|썸남|썸 ?타|연인|여자 ?친구|여친|남자 ?친구|남친|기념일|프로포즈|커플|맞선|선 ?자리/;
+const PROMPT_V = 'v5';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
-형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
+형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"date":false,"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
 - place: 질문에 나온 구체적인 장소 이름(건물·역·시설·가게·랜드마크). 예: "딥스테이션", "강남역", "코엑스". 없으면 "".
 - area: 동네·지역 이름(시·구·동). 예: "성수동", "용인 처인구". 없으면 "".
 - time: 식사를 시작할 시각, 24시간 "HH:MM". 낮 활동이 "5시까지"면 오후 5시로 보고 "17:30". "점심"→"12:00", "저녁"→"18:30", "야식·늦게"→"22:30", "아침"→"08:30". 단서가 없으면 "".
 - kind: 식사 "meal", 카페·디저트 "cafe", 술자리 "drink".
 - foods: 원하는 음식 종류를 짧은 한국어 낱말로 최대 5개. 직접 말하지 않았어도 상황에 어울리는 것을 추론한다. 예: 운동·물놀이 뒤 → ["국밥","찌개","고기"].
 - avoid: 피하고 싶다고 한 음식.
+- date: 소개팅·데이트·썸·연인·기념일처럼 둘이 만나는 자리면 true.
 - talk: 조용히 대화·데이트·소개팅·접대면 true. premium: 기념일·접대·비싸도 좋은 곳이면 true. group: 여럿이·회식·단체면 true.
 - young: 20~30대가 많이 가는 곳을 원하면 true. female: 여성 손님이 많은 곳을 원하면 true. chain_ok: 프랜차이즈도 괜찮다고 하면 true.
 - situation: 상황 요약 한 문장(30자 안팎).`;
@@ -36,6 +39,7 @@ const ANSWER_SYS = `너는 맛집 사이트 '매출맛집'의 추천 도우미�
 - 매출점수는 BC카드 결제 매출 순위로 매긴 0~100점이다(맛 평가가 아님). 높을수록 손님이 많이 찾는 집이다.
 - '주인장 픽'은 사이트 주인이 직접 다니며 모아 둔 맛집, '주인장 취향'은 주인장 픽과 특징이 비슷한 집이다.
   이름 앞에 ★가 붙은 후보가 '주인장 픽'이다. ★ 후보가 있으면 상황에 크게 어긋나지 않는 한 1곳 이상 넣고, why에 주인장 픽이라고 밝힌다. 나머지는 가까운 곳과 섞는다.
+- 질문이 소개팅·데이트 자리면 주인장 픽은 신경 쓰지 말고, 대화하기 좋은 곳·아주 붐비지 않는 곳·분위기를 짐작할 수 있는 업종을 우선한다.
 - 거리를 고려한다. 2km가 넘으면 차로 가기 좋은 거리라고 말해도 된다. 시간 계산은 하지 않는다.
 - 업종이 서로 겹치지 않게 고르면 좋다.
 - why: 상황에 맞는 이유 한 문장(45자 이내, 해요체).
@@ -86,11 +90,12 @@ async function parse(env, q) {
   const s = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
   const list = v => (Array.isArray(v) ? v : []).map(x => s(x, 12)).filter(Boolean).slice(0, 5);
   const time = /^([01]?\d|2[0-3]):[0-5]\d$/.test(s(j.time, 5)) ? s(j.time, 5).padStart(5, '0') : '';
+  const date = !!j.date || DATE_RE.test(q);
   const intent = {
-    place: s(j.place, 30), area: s(j.area, 30), time,
+    place: s(j.place, 30), area: s(j.area, 30), time, date,
     kind: ['meal', 'cafe', 'drink'].includes(j.kind) ? j.kind : 'meal',
     foods: list(j.foods), avoid: list(j.avoid),
-    talk: !!j.talk, premium: !!j.premium, group: !!j.group, young: !!j.young, female: !!j.female, chain_ok: !!j.chain_ok,
+    talk: !!j.talk || date, premium: !!j.premium, group: !!j.group && !date, young: !!j.young || date, female: !!j.female || date, chain_ok: !!j.chain_ok,
     situation: s(j.situation, 60),
   };
   let place = null;
@@ -106,8 +111,10 @@ async function answer(env, q, body) {
     t: (Array.isArray(c.t) ? c.t : []).map(x => clip(x, 12)).filter(Boolean).slice(0, 6), h: clip(c.h, 16),
   })).filter(c => c.n);
   if (!cands.length) return { answer: '', picks: [] };
-  const lines = cands.map(c => [c.i, (c.t.includes('주인장 픽') ? '★' : '') + c.n, c.c, c.s + '점', dist(c.d), c.t.join(', ') || '-', c.h || '-'].join(' | ')).join('\n');
+  const date = !!intent.date;
+  const lines = cands.map(c => [c.i, (!date && c.t.includes('주인장 픽') ? '★' : '') + c.n, c.c, c.s + '점', dist(c.d), c.t.join(', ') || '-', c.h || '-'].join(' | ')).join('\n');
   const user = '질문: ' + q
+    + (date ? '\n자리: 소개팅·데이트 (후보는 모두 20~30대 여성 손님이 많은 곳)' : '')
     + '\n상황: ' + (clip(intent.situation, 60) || '-') + (intent.time ? ' · 식사 시각 ' + clip(intent.time, 5) : '')
     + (Array.isArray(intent.foods) && intent.foods.length ? ' · 어울리는 음식 ' + intent.foods.slice(0, 5).map(x => clip(x, 12)).join(', ') : '')
     + '\n기준 장소: ' + (clip(body.place && body.place.name, 30) || '-')
@@ -119,7 +126,7 @@ async function answer(env, q, body) {
   // 작은 모델은 '주인장 픽'과 '주인장 취향'을 헷갈린다: 후보에 픽이 있는데 하나도 안 골랐으면 순위가 가장 높은 픽을 넣는다
   const isPick = c => c.t.includes('주인장 픽');
   const firstPick = cands.find(isPick);
-  if (picks.length && firstPick && !picks.some(p => isPick(cands[p.i]))) {
+  if (!date && picks.length && firstPick && !picks.some(p => isPick(cands[p.i]))) {
     const add = { i: firstPick.i, why: '주인장이 직접 다니며 모아 둔 집이에요 (' + dist(firstPick.d) + ')' };
     if (picks.length >= 3) picks[picks.length - 1] = add; else picks.push(add);
   }

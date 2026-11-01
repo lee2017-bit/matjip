@@ -964,13 +964,13 @@ def main():
 
     # ---- 물어보기 (Worker 의 /chat — Cloudflare Workers AI. 후보는 이 사이트 데이터에서만 고른다)
     if LOOKUP_API:
-        examples = ["딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "성수동에서 조용히 대화하기 좋은 저녁",
-                    "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
+        examples = ["종로 점심 소개팅 어디가 좋을까?", "성수동 저녁 데이트", "을지로 기념일 저녁, 조용한 곳",
+                    "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
         ex = "".join(f'<button type="button" class="chip ex">{esc(x)}</button>' for x in examples)
         body = f"""
 <section class="hero small ask-hero">
   <h1>뭐 먹을지 <span>물어보기</span></h1>
-  <p class="sub">장소·시간·상황을 말하면 근처 매출 상위 집과 주인장 픽 중에서 골라 드려요</p>
+  <p class="sub">장소·시간·상황을 말하면 근처 매출 상위 집 중에서 골라 드려요. 소개팅·데이트는 20~30대 여성 손님이 많은 곳만 골라요</p>
 </section>
 <form id="ask-form" class="ask-form" autocomplete="off">
   <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 딥스테이션에서 5시까지 다이빙하고 뭐 먹지?" aria-label="질문"></textarea>

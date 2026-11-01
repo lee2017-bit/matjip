@@ -91,6 +91,8 @@
         else if (!(p.bits & timeBit(t))) return false;
       }
       if (intent.avoid && intent.avoid.length && foodMatch(intent.avoid, p)) return false;
+      // 소개팅·데이트: 주 고객 1·2위가 모두 20~30대이고 모두 여성인 곳만 (주인장 픽이어도 예외 없음)
+      if (intent.date && !(youngF(p))) return false;
       return true;
     });
     // 반경을 넓혀 가며 후보가 14곳 이상 모이는 가장 가까운 범위를 쓴다
@@ -98,10 +100,13 @@
       return ok.filter(function (p) { return p.d <= r; }).length >= 14;
     })[0] || 12000;
     // 주인장 픽은 조금 멀어도(반경의 3배: 도심 3km, 교외 6km 안팎) 후보에 넣는다 — 주인장이 그 동네에서 직접 모아 둔 집이라서
-    var pickR = Math.min(Math.max(radius * 3, 2000), 12000);
+    // 소개팅·데이트는 주인장 픽을 챙기지 않는다
+    var pickR = intent.date ? radius : Math.min(Math.max(radius * 3, 2000), 12000);
     ok = ok.filter(function (p) { return p.d <= radius || (p.pick && p.d <= pickR); });
     ok.forEach(function (p) {
-      var r = p.score + (p.pick ? 14 : 0) + (p.taste ? 8 : 0) - 10 * p.d / (p.pick ? pickR : radius);
+      var mine = !intent.date && (p.pick ? 14 : 0) + (p.taste ? 8 : 0);
+      var r = p.score + mine - 10 * p.d / (p.pick ? pickR : radius);
+      if (intent.date) r += (p.talk ? 10 : 0) + (p.premium ? 4 : 0) - (p.busy ? 12 : 0) - (p.group ? 5 : 0) - (p.g === 'quick' ? 8 : 0);
       if (intent.foods && intent.foods.length && foodMatch(intent.foods, p)) r += 10;
       if (intent.talk) r += (p.talk ? 8 : 0) - (p.busy ? 10 : 0);
       if (intent.premium && p.premium) r += 10;
@@ -113,9 +118,11 @@
     ok.sort(function (a, b) { return b.rank - a.rank; });
     return { list: ok, radius: radius };
   }
-  function tagsOf(p) {
-    return [['주인장 픽', p.pick], ['주인장 취향', p.taste && !p.pick], ['대화하기 좋은 곳', p.talk], ['고급', p.premium], ['회식', p.group],
-      ['아주 붐빔', p.busy], ['20~30대 많음', (p.ages || []).indexOf('young') !== -1], ['여성 손님 많음', p.sex === 'f']]
+  function youngF(p) { return (p.ages || []).indexOf('young') !== -1 && p.sex === 'f'; }
+  function tagsOf(p, date) {
+    var yf = youngF(p);
+    return [['주인장 픽', p.pick && !date], ['주인장 취향', p.taste && !p.pick && !date], ['20~30대 여성 많음', yf], ['대화하기 좋은 곳', p.talk], ['고급', p.premium],
+      ['회식', p.group], ['아주 붐빔', p.busy], ['20~30대 많음', !yf && (p.ages || []).indexOf('young') !== -1], ['여성 손님 많음', !yf && p.sex === 'f']]
       .filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
   }
 
@@ -152,16 +159,17 @@
     parsed.then(function (r) {
       if (r._status && r._status !== 200) { fail(r.message || 'AI가 지금 답하지 못했어요. 잠시 뒤 다시 물어봐 주세요.'); return; }
       var intent = r.intent || {}, place = r.place;
+      if (/소개팅|데이트|기념일|연인|커플|여자 ?친구|여친|남자 ?친구|남친/.test(q)) intent.date = true;
       if (!place) { askWhere(q, intent); return; }
       status('"' + place.name + '" 근처 가게를 모으는 중… (최대 15초)');
       var live = withTimeout(fetch(M.API + '/?lat=' + place.lat + '&lng=' + place.lng).then(function (x) { return x.json(); }), 15000)
         .then(function (j) { return (j.results || []).map(function (x) { return x.item; }).filter(Boolean); }, function () { return []; });
       return Promise.all([loadData, live]).then(function (v) {
         var c = candidates(v[0], v[1], place, intent);
-        if (!c.list.length) { fail('"' + place.name + '" 근처에서 조건에 맞는 가게를 찾지 못했어요. 시간이나 조건을 줄여서 다시 물어봐 주세요.'); return; }
+        if (!c.list.length) { fail('"' + place.name + '" 근처에서 ' + (intent.date ? '20~30대 여성 손님이 많은 ' : '') + '조건에 맞는 가게를 찾지 못했어요. 시간이나 조건을 줄여서 다시 물어봐 주세요.'); return; }
         var top = c.list.slice(0, 18);
         status('후보 ' + top.length + '곳 중에서 고르는 중…');
-        var cands = top.map(function (p) { return { n: p.name, c: p.cat, s: p.score, d: Math.round(p.d), t: tagsOf(p), h: p.hours || '' }; });
+        var cands = top.map(function (p) { return { n: p.name, c: p.cat, s: p.score, d: Math.round(p.d), t: tagsOf(p, intent.date), h: p.hours || '' }; });
         return withTimeout(post({ step: 'answer', q: q, intent: intent, place: { name: place.name }, cands: cands }), 30000)
           .catch(function () { return { _status: 0 }; })
           .then(function (a) { show(q, intent, place, c, top, a); });
@@ -199,7 +207,8 @@
       picks = top.slice(0, 3).map(function (p, i) { return { i: i, why: '' }; });
     }
     var meta = el('p', 'ask-meta');
-    meta.appendChild(document.createTextNode('기준 ' + place.name + (intent.time ? ' · ' + intent.time + ' 영업' : '') + ' · ' + fmtDist(c.radius) + ' 안 ' + c.list.length + '곳 중 · '));
+    meta.appendChild(document.createTextNode('기준 ' + place.name + (intent.time ? ' · ' + intent.time + ' 영업' : '') + (intent.date ? ' · 20~30대 여성 손님이 많은 곳만' : '')
+      + ' · ' + fmtDist(c.radius) + ' 안 ' + c.list.length + '곳 중 · '));
     var ml = el('a', '', '지도'); ml.href = M.ROOT + 'map.html#at=' + encodeURIComponent(place.lat + ',' + place.lng + ',' + place.name); meta.appendChild(ml);
     box.appendChild(meta);
     out.appendChild(box);
