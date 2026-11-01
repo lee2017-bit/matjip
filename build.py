@@ -459,57 +459,62 @@ def taste_prob(r: dict) -> float:
     return 1 / (1 + math.exp(-max(min(z, 30), -30)))
 
 
+def where_short(addr) -> str:
+    """'서울 중구 세종대로11길 26 (서소문동)' → '중구 세종대로11길'"""
+    t = short_addr(addr).split()
+    t = t[1:] if t and not t[0].startswith("세종") else t
+    return " ".join(x for x in t[:2])
+
+
 def card(r: dict, rank: int) -> str:
+    """간단한 카드: 이름·점수 / 업종·위치·영업시간 / 태그 3개 / eat.pl 버튼. 나머지는 '자세히' 안에."""
     cat = r.get("merTpbuzNm") or "기타"
     g = GROUP_OF.get(cat, "etc")
     lunch = open_for_lunch(r.get("srtTime") or "", r.get("endTime") or "") and g not in ("drink", "cafe")
     s = r["_score"]
-    tags = []
-    if r.get("_pick"):
-        tags.append('<span class="tag pick">주인장 픽</span>')
-    if r.get("_taste"):
-        tags.append(f'<span class="tag taste">주인장 취향 · 상위 {r["_taste_top"]}%</span>')
     premium = is_premium(r)
     chain = is_chain(r)
-    talk = is_talk(r) or (premium and not is_busy(r)) or bool(r.get("_tag_room"))
-    if r.get("_tag_room"):
-        tags.append('<span class="tag room">룸 있음</span>')
-    if premium:
-        tags.append(f'<span class="tag premium">{"고급" if r.get("_tag_premium") else "고급 추정"}</span>')
-    if talk:
-        tags.append('<span class="tag talk">대화하기 좋은 곳</span>')
-    for on, t in ((r.get("empyVsitYn"), "회식 적합"), (r.get("loclPrsnPpltYn"), "동네 맛집"), (r.get("frnrVsitYn"), "외국인 방문")):
-        if on:
-            tags.append(f'<span class="tag">{t}</span>')
-    if chain:
-        tags.append('<span class="tag chain">프랜차이즈</span>')
+    busy = is_busy(r)
+    talk = is_talk(r) or (premium and not busy) or bool(r.get("_tag_room"))
+    tags = [(k, t) for k, t, on in (
+        ("pick", "주인장 픽", r.get("_pick")),
+        ("taste", "주인장 취향", r.get("_taste")),
+        ("room", "룸 있음", r.get("_tag_room")),
+        ("talk", "대화하기 좋은 곳", talk),
+        ("premium", "고급", premium),
+        ("", "회식", r.get("empyVsitYn")),
+        ("busy", "아주 붐빔", busy),
+        ("", "동네 맛집", r.get("loclPrsnPpltYn")),
+        ("", "외국인 방문", r.get("frnrVsitYn")),
+        ("chain", "프랜차이즈", chain)) if on][:3]
     cust = r.get("vistCstmrRnkList") or {}
     cust_txt = ", ".join(v for v in (cust.get("rk01"), cust.get("rk02"), cust.get("rk03")) if v)
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
-    busy = is_busy(r)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
                                     ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk), ("premium", premium),
                                     ("taste", r.get("_taste")), ("hidden", r.get("_taste") and s < 70)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
-    notes = []
+    more = [f'<p class="nums">전국 같은 업종 매출 상위 {pct(r.get("allSaleRnk"))}% · 구 안에서 상위 {pct(r.get("ccgSaleRnk"))}%</p>',
+            f'<p>{esc(holidays(r.get("hldyDwk")))}{(" · 붐비는 때 " + esc(peak)) if peak else ""}</p>']
+    if cust_txt:
+        more.append(f"<p>주 고객 {esc(cust_txt)}</p>")
     if busy:
         room = "" if r.get("_tag_room") else (BUSY_ROOM_GROUP if r.get("empyVsitYn") else BUSY_ROOM)
-        notes.append(f'<p class="note busy">{BUSY_NOTE}{(" · " + room) if room else ""}</p>')
+        more.append(f'<p class="note busy">{BUSY_NOTE}{(" · " + room) if room else ""}</p>')
     if premium and s < 75:
         rk = r.get("_prem_rank")
-        notes.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
-                     + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
-    note = "".join(notes)
+        more.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
+                    + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
+    more.append(f"<p>{esc(short_addr(r.get('merAddr')))}</p>")
+    sub = " · ".join(x for x in (f'<span class="cat">{esc(cat)}</span>', esc(where_short(r.get("merAddr"))), esc(hrs)) if x)
+    tag_html = "".join(f'<span class="t {k}">{esc(t)}</span>' for k, t in tags)
     return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-k="{'chain' if chain else 'indie'}" data-c="{esc(city_of(r.get('merAddr')))}">
-  <div class="card-head"><span class="rank">{rank}</span><span class="ico" aria-hidden="true">{icon_of(cat)}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
-  <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
-  <p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
-  {note}<p class="meta">{esc(short_addr(r.get('merAddr')))}</p>
-  <p class="meta">{'영업 예상 ' + esc(hrs) + ' · ' if hrs else ''}{esc(holidays(r.get('hldyDwk')))}{(' · 붐비는 때 ' + esc(peak)) if peak else ''}</p>
-  {f'<p class="meta">주 고객 {esc(cust_txt)}</p>' if cust_txt else ''}
-  {''.join(tags)}
-  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 메뉴·리뷰 요약 보기 →</a>{'<button type="button" class="map-btn">지도</button>' if latlng(r) else ''}<button type="button" class="share">공유</button></div>
+<div class="card-head"><span class="rank">{rank}</span><span class="ico" aria-hidden="true">{icon_of(cat)}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="score" title="매출점수"><b>{s}</b><small>{grade(s)}</small></span></div>
+<p class="sub">{sub}</p>
+{f'<p class="tags">{tag_html}</p>' if tag_html else ''}
+<div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 메뉴 보기</a>{'<button type="button" class="map-btn" aria-label="지도에서 보기">지도</button>' if latlng(r) else ''}<button type="button" class="share" aria-label="공유">공유</button></div>
+<details class="more"><summary>자세히</summary>{''.join(more)}</details>
 </li>"""
 
 
@@ -541,53 +546,38 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 <nav class="topnav"><a href="{up}index.html#search">점수 검색</a><a href="{up}map.html">지도</a><a href="{up}picks.html">주인장 픽</a></nav></header>
 <main>{body}</main>
 <footer>
-<p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong> (최근 1개월 매출 순위). 백분위는 같은 업종 안에서의 매출 순위이며 낮을수록 상위입니다.</p>
-<p><strong>매출점수</strong>는 이 백분위(전국 75% + 구 안 25%)를 0~100점으로 바꾼 값입니다. 맛 평가가 아니라 얼마나 많이 팔리는지를 보여 주므로, 좌석이 적거나 예약제인 집은 낮게 나올 수 있어요.</p>
-<p>영업 예상 시간은 최근 1개월 결제 승인 시각으로 추정한 값이라 공식 영업시간과 다를 수 있습니다. 이 사이트는 BC카드나 eat.pl의 공식 서비스가 아닙니다.</p>
+<p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong>. 매출점수는 최근 1개월 같은 업종 매출 순위를 0~100점으로 바꾼 값으로, 맛 평가가 아니에요. 영업시간은 결제 시각으로 추정한 값이에요.</p>
+<p>이 사이트는 BC카드나 eat.pl의 공식 서비스가 아닙니다.</p>
 </footer>
 <script src="{up}assets/app.js"></script>
 </body></html>"""
 
 
-AGE_NAV = ('<nav class="filters" data-key="a" aria-label="주 고객">'
-           '<button type="button" data-v="" class="on">모든 손님</button>'
-           '<button type="button" data-v="young">20~30대가 많이 가는 곳</button>'
-           '<button type="button" data-v="20">20대</button>'
-           '<button type="button" data-v="30">30대</button>'
-           '<button type="button" data-v="40">40대</button>'
-           '<button type="button" data-v="50">50대 이상</button></nav>'
-           '<nav class="filters" data-key="s" aria-label="주 고객 성별">'
-           '<button type="button" data-v="" class="on">모든 성별</button>'
-           '<button type="button" data-v="f">여성 손님 위주</button>'
-           '<button type="button" data-v="m">남성 손님 위주</button>'
-           '<button type="button" data-v="mix">남녀 고루</button></nav>')
+def chip_row(key: str, label: str, opts: list, default: str = "") -> str:
+    on = ' class="on"'
+    btns = "".join(f'<button type="button" data-v="{esc(k)}"{on if k == default else ""}>{esc(v)}</button>' for k, v in opts)
+    return f'<div class="frow"><span class="flabel">{esc(label)}</span><nav class="filters" data-key="{key}" aria-label="{esc(label)}">{btns}</nav></div>'
 
 
 def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal",
                  chain_default: str = "indie", extra: list | None = None) -> str:
-    city_nav = ""
+    """종류 칩 한 줄(고정) + '필터' 버튼 안에 상황·손님·지역·프랜차이즈."""
+    rows = []
+    if purpose or extra:
+        opts = [("", "전체")]
+        if purpose:
+            opts += [("lunch", "점심 영업"), ("group", "회식"), ("talk", "대화하기 좋은 곳"), ("premium", "고급"),
+                     ("taste", "주인장 취향"), ("pick", "주인장 픽"), ("local", "동네 맛집"), ("foreign", "외국인 많이 가는 곳")]
+        opts += list(extra or [])
+        rows.append(chip_row("f", "상황", opts))
+    rows.append(chip_row("a", "손님 연령", [("", "전체"), ("young", "20~30대 위주"), ("20", "20대"), ("30", "30대"), ("40", "40대"), ("50", "50대 이상")]))
+    rows.append(chip_row("s", "손님 성별", [("", "전체"), ("f", "여성 위주"), ("m", "남성 위주"), ("mix", "남녀 고루")]))
     if cities and len(cities) > 1:
-        city_nav = ('<nav class="filters" data-key="c" aria-label="지역">'
-                    + '<button type="button" data-v="" class="on">전 지역</button>'
-                    + "".join(f'<button type="button" data-v="{esc(c)}">{esc(c)}</button>' for c in cities) + "</nav>")
-    purpose_nav = ""
-    if purpose:
-        purpose_nav = ('<nav class="filters" data-key="f" aria-label="상황">'
-                       '<button type="button" data-v="" class="on">모든 상황</button>'
-                       '<button type="button" data-v="lunch">점심 영업</button>'
-                       '<button type="button" data-v="group">회식</button>'
-                       '<button type="button" data-v="talk">대화하기 좋은 곳</button>'
-                       '<button type="button" data-v="premium">고급</button>'
-                       '<button type="button" data-v="local">동네 맛집</button>'
-                       '<button type="button" data-v="foreign">외국인 많이 가는 곳</button>'
-                       '<button type="button" data-v="pick">주인장 픽</button>'
-                       '<button type="button" data-v="taste">주인장 취향</button>'
-                       + "".join(f'<button type="button" data-v="{k}">{esc(v)}</button>' for k, v in (extra or [])) + '</nav>')
-    return f"""{city_nav}{AGE_NAV}<div class="sticky">
-<nav class="filters" data-key="g" aria-label="종류">{group_chips(present, default)}</nav>
-{purpose_nav}</div>
+        rows.append(chip_row("c", "지역", [("", "전체")] + [(c, c) for c in cities]))
+    rows.append(chip_row("k", "프랜차이즈", [("indie", "빼고"), ("", "포함")], chain_default))
+    return f"""<div class="sticky"><nav class="filters" data-key="g" aria-label="종류">{group_chips(present, default)}</nav></div>
 <div class="listhead"><p class="count" id="count"></p>
-<nav class="filters sortnav" data-key="k" aria-label="프랜차이즈"><button type="button" data-v="indie"{' class="on"' if chain_default == "indie" else ''}>프랜차이즈 빼고</button><button type="button" data-v=""{' class="on"' if chain_default != "indie" else ''}>포함</button></nav></div>
+<details class="fpanel"><summary>필터<span id="fcount"></span></summary>{''.join(rows)}</details></div>
 <ol class="list" id="list">
 {cards}
 </ol>"""
@@ -686,13 +676,12 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="../index.html">전체 지역</a> › {esc(a['city'])}</p>
-  <h1>{esc(a['name'])} 점심·회식 맛집 <span>매출점수 순위</span></h1>
-  <p class="sub">BC카드 최근 1개월 결제 기준 매출 상위 {len(items)}곳 · {esc(updated)} 업데이트</p>
-  <button type="button" class="share-page">이 동네 순위 공유하기</button>
+  <h1>{esc(a['name'])} 맛집</h1>
+  <p class="sub">카드 매출 상위 {len(items)}곳 · {esc(updated)} 기준</p>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 <section class="picker" id="picker">
   <h2>오늘 점심 뭐 먹지?</h2>
-  <p>이 동네 점심 영업하는 매출 상위 집 중에서 3곳을 골라 드려요.</p>
   <button type="button" id="pick">3곳 뽑기</button>
   <ol id="picked" class="picked"></ol>
   <button type="button" id="pick-share" class="share-page" hidden>이 3곳 팀에 공유하기</button>
@@ -718,9 +707,9 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="../index.html">홈</a> › 종류별 순위</p>
-  <h1>{esc(name)} 맛집 <span>매출점수 TOP {len(rows)}</span></h1>
-  <p class="sub">이 사이트가 모은 {len(places):,}곳 중 {esc(name)} 업종을 매출점수 순으로 모았습니다.</p>
-  <button type="button" class="share-page">이 순위 공유하기</button>
+  <h1>{esc(name)} 맛집 TOP {len(rows)}</h1>
+  <p class="sub">전국 {len(places):,}곳 중 매출점수 순</p>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {key}, cities, default=key)}"""
         title = f"{name} 맛집 매출 순위 TOP {len(rows)} | {SITE_NAME}"
@@ -737,9 +726,9 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 주인장 픽</p>
-  <h1>주인장 픽 <span>{len(prows)}곳</span></h1>
-  <p class="sub">이 사이트를 만든 사람이 오래전부터 지도에 모아 온 맛집 중 eat.pl 데이터가 있는 곳입니다. 가성비 집, 데이트 코스, 유명한 집이 섞여 있어요. 평균 매출점수 {avg}점.</p>
-  <button type="button" class="share-page">주인장 픽 공유하기</button>
+  <h1>주인장 픽 {len(prows)}곳</h1>
+  <p class="sub">만든 사람이 오래 모아 온 맛집 · 평균 {avg}점</p>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prows}, cities, default="", chain_default="")}"""
         (OUT / "picks.html").write_text(page(f"주인장 픽 — 직접 모은 맛집 {len(prows)}곳의 매출점수 | {SITE_NAME}",
@@ -754,10 +743,10 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 대화하기 좋은 곳</p>
-  <h1>조용히 대화하기 좋은 곳 <span>{len(trows)}곳</span></h1>
-  <p class="sub">소개팅, 데이트, 오랜만의 친구 모임처럼 대화가 중요한 자리에. 결제 데이터로 골랐어요: 양식·일식·바 같은 업종, 단체 회식 결제가 없고, 손님이 몰리는 매출 최상위 집과 체인 지점·쇼핑몰 매장은 빼고, 저녁까지 영업하며 20~30대 손님이 많은 곳입니다.</p>
-  <p class="sub small-note">실제 소음을 잰 것은 아니라서 분위기는 다를 수 있어요. eat.pl 상세 페이지에서 붐비는 시간대를 꼭 확인해 보세요.</p>
-  <button type="button" class="share-page">이 목록 공유하기</button>
+  <h1>대화하기 좋은 곳</h1>
+  <p class="sub">소개팅·데이트·오랜만의 모임에</p>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 손님이 몰리는 최상위 집과 체인·쇼핑몰 매장은 빼고, 저녁까지 영업하며 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 넣었어요. 실제 소음을 잰 건 아니에요.</p></details>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in trows}, cities, purpose=False, default="")}"""
         (OUT / "talk.html").write_text(page(f"조용히 대화하기 좋은 맛집 {len(trows)}곳 — 소개팅·데이트 장소 | {SITE_NAME}",
@@ -773,10 +762,10 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 주인장 취향</p>
-  <h1>주인장 취향 추천 <span>{len(tsrows):,}곳</span></h1>
-  <p class="sub">주인장이 모아 온 맛집 {len(prows)}곳과 같은 건물의 다른 가게들을 비교해 고르는 기준을 배운 뒤, 그 기준에 잘 맞는 집을 찾았어요. 주인장 맛집은 프랜차이즈가 거의 없고, 동네 주민보다 찾아오는 손님이 많고, 주말에도 열고, 저녁에 붐비는 단독 식당이 많아요.</p>
-  <p class="sub small-note">취향 일치도 상위 10%만 모았고, 그중 {n_hidden}곳은 매출점수가 70점 미만인 숨은 집이에요("70점 미만 숨은 집" 버튼). 한 사람의 취향을 따라 한 추천이라 참고로만 봐 주세요.</p>
-  <button type="button" class="share-page">이 목록 공유하기</button>
+  <h1>주인장 취향 추천</h1>
+  <p class="sub">주인장 맛집과 닮은 단독 식당 · 숨은 집 {n_hidden}곳 포함</p>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>주인장 맛집 {len(prows)}곳과 같은 건물의 다른 가게를 비교해 고르는 기준을 배웠어요. 프랜차이즈가 아니고, 동네 주민보다 찾아오는 손님이 많고, 주말에도 열고, 저녁에 붐비는 집일수록 높아요. 매출점수와는 따로 계산해서 70점 미만 숨은 집도 나와요. 한 사람의 취향이라 참고로만 봐 주세요.</p></details>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in tsrows}, cities, default="", extra=[("hidden", "70점 미만 숨은 집")])}"""
         (OUT / "taste.html").write_text(page(f"주인장 취향 추천 맛집 {len(tsrows):,}곳 — 점수 낮은 숨은 집까지 | {SITE_NAME}",
@@ -790,10 +779,10 @@ def main():
         body = f"""
 <section class="hero small">
   <p class="crumb"><a href="index.html">홈</a> › 고급·가격대 있는 집</p>
-  <h1>가격대 있는 고급 맛집 <span>{len(prem)}곳</span></h1>
-  <p class="sub">오마카세, 파인다이닝, 비스트로, 한우·스테이크하우스처럼 가격대가 있는 집을 모았어요. 이런 곳은 손님 수가 적어 매출점수가 낮게 나오기 쉬워서, 여기서는 고급 업장끼리 매출 순으로 줄 세웠습니다.</p>
-  <p class="sub small-note">결제 데이터에는 가격 정보가 없어서 가게 이름·업종·영업 시간 패턴으로 추정했어요. 체인 지점과 쇼핑몰 매장은 뺐습니다. 실제 가격은 eat.pl이나 예약 앱에서 확인해 주세요.</p>
-  <button type="button" class="share-page">이 목록 공유하기</button>
+  <h1>고급 맛집</h1>
+  <p class="sub">오마카세·파인다이닝·비스트로·한우</p>
+  <details class="about"><summary>어떻게 골랐나요?</summary><p>결제 데이터엔 가격이 없어서 가게 이름·업종·영업 시간으로 추정했어요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서, 여기서는 고급 업장끼리 매출 순으로 줄 세웠어요. 체인과 쇼핑몰 매장은 뺐어요.</p></details>
+  <button type="button" class="share-page">공유하기</button>
 </section>
 {list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prem}, cities, purpose=False, default="")}"""
         (OUT / "premium.html").write_text(page(f"오마카세·파인다이닝 등 고급 맛집 {len(prem)}곳 매출 순위 | {SITE_NAME}",
@@ -804,8 +793,8 @@ def main():
     body = """
 <section class="hero small map-hero">
   <p class="crumb"><a href="index.html">홈</a> › 지도</p>
-  <h1>지도로 보는 <span>매출맛집</span></h1>
-  <p class="sub">지도를 움직이면 그 화면 안에서 매출점수가 높은 집을 보여 드려요. <b>내 위치</b>를 누르면 주변 동네 매출 상위 가게를 실시간으로 불러오고, 점수순·가까운 순으로 볼 수 있어요.</p>
+  <h1>지도</h1>
+  <p class="sub">화면 안 매출점수 높은 집 · 내 위치 주변</p>
 </section>
 <div class="map-tools">
   <button type="button" id="locate" class="locate">◎ 내 위치</button>
@@ -874,20 +863,20 @@ def main():
     cats = "".join(f'<a class="chip" href="cat/{k}.html">{esc(n)}</a>' for k, n, _ in cat_links)
     body = f"""
 <section class="hero" id="search">
-  <h1>내가 아는 그 집, <span>매출점수</span>는 몇 점?</h1>
-  <p class="sub">별점이나 광고 말고, BC카드 최근 1개월 결제 데이터로 실제로 얼마나 팔리는 집인지 0~100점으로 보여 드려요. 가게 이름이나 동네를 검색해 보세요.</p>
-  <input id="q" type="search" placeholder="가게 이름이나 동네 (예: 진주회관, 을지로)" aria-label="가게 이름이나 동네 검색" autocomplete="off">
-  <a class="near-cta" href="map.html#near">◎ 내 주변 맛집 지도로 보기</a>
+  <h1>그 집, <span>몇 점</span>일까?</h1>
+  <p class="sub">카드 결제 매출로 매긴 맛집 점수</p>
+  <input id="q" type="search" placeholder="가게 이름이나 동네 검색" aria-label="가게 이름이나 동네 검색" autocomplete="off">
+  <a class="near-cta" href="map.html#near">◎ 내 주변 맛집</a>
   <div id="results" class="results" aria-live="polite"></div>
 </section>
 <section class="browse">
-  <h2>종류별 매출점수 순위</h2>
+  <h2>골라 보기</h2>
   <div class="chips">{cats}<a class="chip taste" href="taste.html">주인장 취향 추천</a><a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
 </section>
-<div id="areas"><h2 class="section-title">동네별 점심·회식 맛집 <small>{len(built_areas)}개 동네 · 눌러서 펼치기</small></h2>
+<div id="areas"><h2 class="section-title">동네별 <small>{len(built_areas)}곳</small></h2>
 {''.join(groups)}</div>
-<section class="how">
-  <h2>점수는 이렇게 읽어요</h2>
+<details class="how">
+  <summary>점수는 이렇게 읽어요</summary>
   <ul>
     <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 96점, 1%면 89점, 10%면 77점, 40%면 61점 정도예요.</li>
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
@@ -898,7 +887,7 @@ def main():
     <li><strong>주인장 취향</strong> — 주인장 맛집과 같은 건물의 다른 가게를 비교해 배운 기준(프랜차이즈 아님, 찾아오는 손님, 주말 영업, 저녁 손님 등)에 잘 맞는 상위 10%예요. 매출점수가 낮아도 표시돼요. <a href="taste.html">모아 보기</a></li>
     <li><strong>고급 추정</strong> — 오마카세·파인다이닝·비스트로·한우 등 가격대가 있어 보이는 집이에요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서 고급 업장끼리 순위를 따로 보여 드려요. <a href="premium.html">모아 보기</a></li>
   </ul>
-</section>"""
+</details>"""
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"
     desc = f"별점 말고 실제 결제 매출로 매긴 맛집 점수. {len(places):,}곳 검색, 한식·고기·일식 등 종류별 순위, 을지로·강남·여의도·판교 등 {len(built_areas)}개 동네 점심·회식 맛집."
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))

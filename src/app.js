@@ -146,6 +146,15 @@
     });
     var count = document.getElementById('count');
     if (count) count.textContent = shown ? shown + '곳' : '조건에 맞는 곳이 없어요. 다른 버튼을 눌러 보세요.';
+    var fc = document.getElementById('fcount');  // 필터 버튼에 켜진 조건 수 (프랜차이즈 기본값은 빼고)
+    if (fc) {
+      var n = 0;
+      document.querySelectorAll('.fpanel nav.filters').forEach(function (nv) {
+        var on = nv.querySelector('button.on'), v = on ? on.getAttribute('data-v') : '';
+        if (v && !(nv.getAttribute('data-key') === 'k' && v === 'indie')) n++;
+      });
+      fc.textContent = n ? ' ' + n : '';
+    }
   }
   navs.forEach(function (n) {
     n.querySelectorAll('button').forEach(function (b) {
@@ -245,43 +254,51 @@
   function iconOf(cat) { return ICONS[cat] || '🍽️'; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function placeCard(p) {
-    // p: {name, cat, addr, score, all, ccg, url, area, pick, busy, note, q}
+    // p: {name, cat, addr, score, all, ccg, url, area, pick, busy, talk, premium, chain, taste, note, q, lat, lng, live}
+    // build.py card() 와 같은 모양: 이름·점수 / 업종·위치 / 태그 3개 / eat.pl 버튼 / 자세히
     var li = el('li', 'card');
     li.id = 'p-' + String(p.url || '').split('/').pop();
     if (p.q) li.setAttribute('data-q', p.q);
     var head = el('div', 'card-head');
     var ic = el('span', 'ico', iconOf(p.cat)); ic.setAttribute('aria-hidden', 'true'); head.appendChild(ic);
     head.appendChild(el('h3', '', p.name));
-    head.appendChild(el('span', 'cat', p.cat || '기타'));
-    var s = el('span', 'score'); s.appendChild(el('b', '', String(p.score))); s.appendChild(document.createTextNode('점')); s.appendChild(el('small', '', grade(p.score)));
+    var s = el('span', 'score'); s.appendChild(el('b', '', String(p.score))); s.appendChild(el('small', '', grade(p.score)));
     head.appendChild(s);
     li.appendChild(head);
-    if (p.note) li.appendChild(el('p', 'meta where', p.note));
-    var nums = el('p', 'nums'); nums.appendChild(el('strong', '', '전국 같은 업종 매출 상위 ' + pct(p.all) + '%')); nums.appendChild(document.createTextNode(' · 구 안에서 상위 ' + pct(p.ccg) + '%'));
-    li.appendChild(nums);
-    if (p.busy) li.appendChild(el('p', 'note busy', BUSY_NOTE + ' · ' + (p.group ? BUSY_ROOM_GROUP : BUSY_ROOM)));
-    if (p.premium && p.score < 75) li.appendChild(el('p', 'note premium', '가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'));
-    var m = el('p', 'meta', p.addr || '');
+    var sub = el('p', 'sub');
+    sub.appendChild(el('span', 'cat', p.cat || '기타'));
+    var where = String(p.addr || '').split(/\s+/);
+    if (where.length && where[0].indexOf('세종') !== 0) where.shift();
+    sub.appendChild(document.createTextNode(' · ' + where.slice(0, 2).join(' ')));
     if (p.area && data && data.areas[p.area]) {
-      m.appendChild(document.createTextNode(' · '));
-      var al = el('a', '', data.areas[p.area] + ' 순위 보기'); al.href = ROOT + 'area/' + p.area + '.html'; m.appendChild(al);
+      sub.appendChild(document.createTextNode(' · '));
+      var al = el('a', '', data.areas[p.area]); al.href = ROOT + 'area/' + p.area + '.html'; sub.appendChild(al);
     }
-    li.appendChild(m);
-    if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
-    if (p.taste) li.appendChild(el('span', 'tag taste', '주인장 취향'));
-    if (p.premium) li.appendChild(el('span', 'tag premium', '고급 추정'));
-    if (p.chain) li.appendChild(el('span', 'tag chain', '프랜차이즈'));
-    if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
+    li.appendChild(sub);
+    var tags = [['pick', '주인장 픽', p.pick], ['taste', '주인장 취향', p.taste], ['talk', '대화하기 좋은 곳', p.talk],
+      ['premium', '고급', p.premium], ['busy', '아주 붐빔', p.busy], ['chain', '프랜차이즈', p.chain], ['', p.note, p.note]]
+      .filter(function (t) { return t[2]; }).slice(0, 3);
+    if (tags.length) {
+      var tg = el('p', 'tags');
+      tags.forEach(function (t) { tg.appendChild(el('span', 't ' + t[0], t[1])); });
+      li.appendChild(tg);
+    }
     var act = el('div', 'actions');
-    var go = el('a', 'go', 'eat.pl에서 메뉴·리뷰 요약 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
+    var go = el('a', 'go', 'eat.pl에서 메뉴 보기'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
     act.appendChild(go);
     if (p.lat) {
-      var mb = el('button', 'map-btn', '지도'); mb.type = 'button';
+      var mb = el('button', 'map-btn', '지도'); mb.type = 'button'; mb.setAttribute('aria-label', '지도에서 보기');
       if (p.live) { li.setAttribute('data-at', p.lat + ',' + p.lng + ',' + p.name); }
       act.appendChild(mb);
     }
-    var sb = el('button', 'share', '공유'); sb.type = 'button'; act.appendChild(sb);
+    var sb = el('button', 'share', '공유'); sb.type = 'button'; sb.setAttribute('aria-label', '공유'); act.appendChild(sb);
     li.appendChild(act);
+    var more = el('details', 'more'); more.appendChild(el('summary', '', '자세히'));
+    more.appendChild(el('p', 'nums', '전국 같은 업종 매출 상위 ' + pct(p.all) + '% · 구 안에서 상위 ' + pct(p.ccg) + '%'));
+    if (p.busy) more.appendChild(el('p', 'note busy', BUSY_NOTE + ' · ' + (p.group ? BUSY_ROOM_GROUP : BUSY_ROOM)));
+    if (p.premium && p.score < 75) more.appendChild(el('p', 'note premium', '가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'));
+    more.appendChild(el('p', '', p.addr || ''));
+    li.appendChild(more);
     return li;
   }
   function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17] }; }
