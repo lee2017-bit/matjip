@@ -151,6 +151,11 @@
   function run(q, here) {
     q = q.replace(/\s+/g, ' ').trim();
     if (q.length < 4) { fail('장소와 상황을 조금 더 자세히 적어 주세요. 예) 성수동에서 조용히 대화하기 좋은 저녁'); return; }
+    if (!here && !/[#&]fresh/.test(location.hash)) {
+      if (!presets) { presetsLoad.then(function () { run(q, here); }); return; }
+      var pre = presets[qkey(q)];
+      if (pre) { var r = JSON.parse(JSON.stringify(pre)); r.q = q; render(r); return; }
+    }
     go.disabled = true; out.innerHTML = '';
     var qline = el('p', 'ask-q-line', q); out.appendChild(qline);
     status('질문을 읽는 중…');
@@ -197,45 +202,71 @@
   }
 
   function show(q, intent, place, c, top, a) {
-    out.innerHTML = '';
-    out.appendChild(el('p', 'ask-q-line', q));
     var picks = (a && a.picks && a.picks.length) ? a.picks.filter(function (x) { return top[x.i]; }) : [];
-    var box = el('div', 'ask-answer');
-    if (picks.length) {
-      if (a.answer) box.appendChild(el('p', 'a', a.answer));
-    } else {
-      box.appendChild(el('p', 'a', a && a._status === 429 ? (a.message || '오늘 물어볼 수 있는 횟수를 다 썼어요.') + ' 대신 점수·거리로 고른 후보를 보여 드려요.'
-        : 'AI 답을 만들지 못해서 매출점수·주인장 픽·거리로 고른 후보를 보여 드려요.'));
+    var msg = a && a.answer;
+    var ai = !!picks.length;
+    if (!ai) {
+      msg = a && a._status === 429 ? (a.message || '오늘 물어볼 수 있는 횟수를 다 썼어요.') + ' 대신 점수·거리로 고른 후보를 보여 드려요.'
+        : 'AI 답을 만들지 못해서 매출점수·주인장 픽·거리로 고른 후보를 보여 드려요.';
       picks = top.slice(0, 3).map(function (p, i) { return { i: i, why: '' }; });
     }
+    var used = {}; picks.forEach(function (x) { used[x.i] = 1; });
+    var res = { q: q, intent: intent, place: { name: place.name, lat: place.lat, lng: place.lng }, radius: c.radius, count: c.list.length, answer: msg || '',
+      picks: picks.map(function (x) { return slim(top[x.i], x.why); }), rest: top.filter(function (_, i) { return !used[i]; }).slice(0, 6).map(function (p) { return slim(p, ''); }) };
+    if (ai) window.__askResult = res;  // tools/ask_presets.js 가 예시 질문의 답을 미리 만들 때 읽는다
+    render(res);
+  }
+  // 카드에 필요한 값만 (미리 만든 답 파일에도 이 모양으로 저장)
+  var SLIM = ['name', 'cat', 'g', 'addr', 'score', 'all', 'ccg', 'url', 'area', 'pick', 'taste', 'talk', 'premium', 'busy', 'group', 'chain', 'lat', 'lng', 'live', 'hours'];
+  function slim(p, why) {
+    var o = { d: Math.round(p.d), why: why || '' };
+    SLIM.forEach(function (k) { if (p[k] !== undefined && p[k] !== '' && p[k] !== 0 && p[k] !== false) o[k] = p[k]; });
+    return o;
+  }
+  function render(res) {
+    var intent = res.intent || {}, place = res.place;
+    out.innerHTML = '';
+    out.appendChild(el('p', 'ask-q-line', res.q));
+    var box = el('div', 'ask-answer');
+    if (res.answer) box.appendChild(el('p', 'a', res.answer));
     var meta = el('p', 'ask-meta');
     meta.appendChild(document.createTextNode('기준 ' + place.name + (intent.time ? ' · ' + intent.time + ' 영업' : '') + (intent.date ? ' · 20~30대 여성 손님이 많은 곳만' : '')
-      + ' · ' + fmtDist(c.radius) + ' 안 ' + c.list.length + '곳 중 · '));
+      + ' · ' + fmtDist(res.radius) + ' 안 ' + res.count + '곳 중 · '));
     var ml = el('a', '', '지도'); ml.href = M.ROOT + 'map.html#at=' + encodeURIComponent(place.lat + ',' + place.lng + ',' + place.name); meta.appendChild(ml);
     box.appendChild(meta);
     out.appendChild(box);
     var ol = el('ol', 'list');
-    picks.forEach(function (x) { ol.appendChild(card(top[x.i], x.why)); });
+    res.picks.forEach(function (p) { ol.appendChild(card(p, p.why)); });
     out.appendChild(ol);
-    var used = {}; picks.forEach(function (x) { used[x.i] = 1; });
-    var rest = top.filter(function (_, i) { return !used[i]; }).slice(0, 6);
-    if (rest.length) {
-      var more = el('details', 'ask-more'); more.appendChild(el('summary', '', '다른 후보 ' + rest.length + '곳 더 보기'));
-      var ol2 = el('ol', 'list'); rest.forEach(function (p) { ol2.appendChild(card(p, '')); }); more.appendChild(ol2);
+    if (res.rest.length) {
+      var more = el('details', 'ask-more'); more.appendChild(el('summary', '', '다른 후보 ' + res.rest.length + '곳 더 보기'));
+      var ol2 = el('ol', 'list'); res.rest.forEach(function (p) { ol2.appendChild(card(p, '')); }); more.appendChild(ol2);
       out.appendChild(more);
     }
     var sb = el('button', 'share-page', '이 질문 공유'); sb.type = 'button';
     sb.onclick = function () {
-      var url = new URL(M.ROOT + 'ask.html', location.href).href + '#q=' + encodeURIComponent(q);
-      var names = picks.map(function (x) { return top[x.i].name; }).join(', ');
-      M.share('맛집 물어보기', '"' + q + '" → ' + names + ' — 카드 결제 매출로 고른 맛집이에요.', url);
+      var url = new URL(M.ROOT + 'ask.html', location.href).href + '#q=' + encodeURIComponent(res.q);
+      var names = res.picks.map(function (p) { return p.name; }).join(', ');
+      M.share('맛집 물어보기', '"' + res.q + '" → ' + names + ' — 카드 결제 매출로 고른 맛집이에요.', url);
     };
     out.appendChild(sb);
     go.disabled = false;
   }
 
+  // 예시 질문은 답을 미리 만들어 둔 파일(assets/ask-presets.json)에서 바로 보여 준다 (AI 사용량 0, 기다림 없음)
+  var presets = null;
+  var presetsLoad = fetch(M.ROOT + 'assets/ask-presets.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+    .then(function (j) { presets = (j && j.answers) || {}; return presets; });
+  function qkey(q) { return String(q || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, ''); }
+
   form.addEventListener('submit', function (e) { e.preventDefault(); run(input.value, null); });
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); run(input.value, null); } });
+  var exBox = document.querySelector('.ask-ex');
+  if (exBox && exBox.getAttribute('data-show')) {  // 홈: 예시 몇 개만 골라 매번 다르게
+    var bs = Array.prototype.slice.call(exBox.querySelectorAll('button')), n = +exBox.getAttribute('data-show');
+    for (var i = bs.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = bs[i]; bs[i] = bs[j]; bs[j] = t; }
+    bs.forEach(function (b, k) { b.hidden = k >= n; exBox.appendChild(b); });
+  }
   document.querySelectorAll('.ask-ex button').forEach(function (b) {
     b.addEventListener('click', function () { input.value = b.textContent; run(input.value, null); });
   });

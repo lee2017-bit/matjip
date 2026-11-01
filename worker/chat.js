@@ -9,7 +9,7 @@
 //     가게 링크(merUrl)는 사이트가 데이터 그대로 붙인다 (AI가 링크·가게를 지어낼 수 없게).
 //
 // 비용: Workers Free 플랜은 Workers AI 하루 10,000 뉴런 무료, 넘으면 과금 없이 오류만 난다 (질문 1개 ≈ 30~60 뉴런).
-// 남용 막기: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 수 제한, 질문 200자·후보 20곳 제한, 같은 질문은 캐시.
+// 남용 막기: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 수 제한, 질문 200자·후보 20곳 제한, 같은 질문은 2일 캐시.
 
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
@@ -61,7 +61,9 @@ export async function chat(request, env, ctx, cors) {
   if (q.length < 4) return json({ message: '조금 더 자세히 물어봐 주세요.' }, 400, cors);
 
   const cache = caches.default;
-  const key = new Request('https://cache.matjip/chat/' + PROMPT_V + '/' + step + '/' + await sha(step === 'parse' ? q : JSON.stringify([q, body.place && body.place.name, (body.cands || []).map(c => c && c.n)])));
+  // 띄어쓰기·문장부호만 다른 질문은 같은 질문으로 본다
+  const qk = q.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+  const key = new Request('https://cache.matjip/chat/' + PROMPT_V + '/' + step + '/' + await sha(step === 'parse' ? qk : JSON.stringify([qk, body.place && body.place.name, (body.cands || []).map(c => c && c.n)])));
   const hit = await cache.match(key);
   if (hit) return withHeaders(hit, cors);
 
@@ -79,7 +81,7 @@ export async function chat(request, env, ctx, cors) {
   }
   const res = json(out, 200, cors);
   ctx.waitUntil(cache.put(key, new Response(JSON.stringify(out), {
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'max-age=' + (step === 'parse' ? 86400 : 6 * 3600) },
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'max-age=' + 2 * 86400 },  // 2일
   })));
   return res;
 }

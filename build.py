@@ -668,18 +668,21 @@ AGE_OPTS = [("", "모든 연령"), ("young", "20~30대 위주"), ("20", "20대")
 SEX_OPTS = [("", "모든 성별"), ("f", "여성 위주"), ("m", "남성 위주"), ("mix", "남녀 고루")]
 
 
+# 예시 질문: 답을 tools/ask_presets.js 로 미리 만들어 data/ask_presets.json 에 둔다 (눌러도 AI를 부르지 않음)
 ASK_EXAMPLES = ["종로 점심 소개팅 어디가 좋을까?", "성수동 저녁 데이트", "을지로 기념일 저녁, 조용한 곳",
-                "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
+                "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥",
+                "홍대 저녁 데이트", "여의도 점심 소개팅", "광화문 회식 장소 추천", "연남동 데이트 저녁",
+                "삼성역 코엑스 근처 점심", "잠실 저녁 데이트 어디 갈까?", "이태원 기념일 저녁", "신촌 점심 혼밥"]
 
 
-def ask_form(examples: list) -> str:
-    """'물어보기' 입력창 (홈·ask.html 공용, 동작은 assets/ask.js)."""
+def ask_form(examples: list, show: int = 0) -> str:
+    """'물어보기' 입력창 (홈·ask.html 공용, 동작은 assets/ask.js). show: 예시 중 몇 개만 무작위로 보여 줄지."""
     ex = "".join(f'<button type="button" class="chip ex">{esc(x)}</button>' for x in examples)
     return f"""<form id="ask-form" class="ask-form" autocomplete="off">
   <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 성수동 저녁 데이트, 어디 갈까?" aria-label="질문"></textarea>
   <button type="submit" id="ask-go">물어보기</button>
 </form>
-<div class="ask-ex" aria-label="예시 질문">{ex}</div>
+<div class="ask-ex" aria-label="예시 질문"{f' data-show="{show}"' if show else ''}>{ex}</div>
 <div id="ask-out" class="ask-out" aria-live="polite"></div>
 <p class="small-note sub">추천 이유는 AI가 쓴 글이라 틀릴 수 있어요.</p>"""
 
@@ -987,6 +990,8 @@ def main():
                         body, "ask.html", 0)
         html_ask = html_ask.replace(js_tag, js_tag + f'\n<script src="assets/ask.js?v={ASSET_V}"></script>')
         (OUT / "ask.html").write_text(html_ask)
+        pre = ROOT / "data" / "ask_presets.json"
+        (OUT / "assets" / "ask-presets.json").write_text(pre.read_text() if pre.exists() else '{"answers":{}}')
 
     # ---- search index (loaded lazily by the home page search box)
     # 압축 형식 (v2): [이름, 업종번호, 주소, 점수, 전국%, 구%, eat.pl id, 동네번호(-1), 플래그, 위도, 경도]
@@ -1052,7 +1057,7 @@ def main():
 <section class="hero home ask-home">
   <h1>오늘 뭐 <span>먹지?</span></h1>
   <p class="sub">장소·시간·상황을 말하면 카드 매출 상위 집 중에서 골라 드려요</p>
-  {ask_form(ASK_EXAMPLES[:4])}
+  {ask_form(ASK_EXAMPLES, 4)}
 </section>
 <section class="home-score" id="search">
   <h2>그 집, 몇 점일까?</h2>
