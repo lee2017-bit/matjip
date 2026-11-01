@@ -16,7 +16,7 @@ const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/k
 const DAILY_LIMIT = { parse: 30, answer: 40 };
 // 소개팅·데이트 자리 (AI가 놓쳐도 이 말이 있으면): 사이트가 20~30대 여성 손님이 많은 곳만 후보로 보낸다
 const DATE_RE = /소개팅|데이트|썸녀|썸남|썸 ?타|연인|여자 ?친구|여친|남자 ?친구|남친|기념일|프로포즈|커플|맞선|선 ?자리/;
-const PROMPT_V = 'v6';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+const PROMPT_V = 'v7';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"date":false,"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -99,7 +99,9 @@ async function parse(env, q) {
     situation: s(j.situation, 60),
   };
   let place = null;
-  if (intent.place) place = await findPlace(intent.place + (intent.area ? ' ' + intent.area : ''), intent.place) || (intent.area ? await findPlace(intent.place, intent.place) : null);
+  // 장소 이름과 맞는 검색 결과가 없으면('을지로' → 을지로휴대폰센터 같은 엉뚱한 곳) 동네 이름으로 보고 다시 찾는다
+  if (intent.place) place = await findPlace(intent.place + (intent.area ? ' ' + intent.area : ''), intent.place)
+    || (intent.area ? await findPlace(intent.place, intent.place) : null) || await findPlace(intent.place, intent.place, true);
   if (!place && intent.area) place = await findPlace(intent.area, intent.area, true);
   return { intent, place };
 }
@@ -187,13 +189,15 @@ async function findPlace(query, want, area) {
     const j = await kakao(query, area ? 10 : 5);
     const docs = j ? j.documents : [];
     if (!docs.length) return null;
-    const exact = docs.find(x => norm(x.place_name) === w) || (!area && docs.find(x => norm(x.place_name).indexOf(w) === 0));
+    const exact = docs.find(x => norm(x.place_name) === w) || (!area && (docs.find(x => norm(x.place_name).indexOf(w) === 0)
+      || (w.length >= 4 && docs.find(x => norm(x.place_name).indexOf(w) !== -1))));
     if (area && !exact) {
       const mid = a => a.sort((x, y) => x - y)[a.length >> 1];
       const region = ((j.meta || {}).same_name || {}).selected_region || '';
       return { name: want, addr: region, lat: +mid(docs.map(d => +d.y)).toFixed(5), lng: +mid(docs.map(d => +d.x)).toFixed(5) };
     }
-    const d = exact || docs[0];
+    if (!exact) return null;
+    const d = exact;
     return { name: d.place_name, addr: d.road_address_name || d.address_name || '', lat: +(+d.y).toFixed(5), lng: +(+d.x).toFixed(5) };
   } catch (e) { return null; }
 }
