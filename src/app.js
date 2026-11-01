@@ -477,18 +477,19 @@
     if (!data._cg) { data._cg = {}; (data.cats || []).forEach(function (c, i) { data._cg[c] = data.catGroup[i]; }); }
     return data._cg[cat] || 'etc';
   }
-  function isDestination(it, score) {
+  var DEST_BAD = /호스피탈리티|푸드앤|호텔|리조트|컨벤션|케이터링|푸드서비스|외식산업|에프앤비|F&B|PC|피씨|노래|만화|스터디|_NICE|\(구\)|휴게소|푸드코트|병원|대학교|인문대|학생식당|구내식당|식당\d|사조/i;
+  function isDestination(it, score) {  // build.py is_destination 과 같은 규칙
     var g = catGroupOf(it.merTpbuzNm);
-    return score >= 90 && !it.loclPrsnPpltYn && !isChainName(it.merNm) && ['drink', 'cafe', 'quick', 'etc'].indexOf(g) === -1;
+    return score >= 90 && !it.loclPrsnPpltYn && !isChainName(it.merNm) && ['drink', 'cafe', 'quick', 'etc'].indexOf(g) === -1
+      && !DEST_BAD.test(it.merNm || '');
   }
   function isTaste(it) {
     var m = data && data.taste;
-    var score = scoreOf(it.allSaleRnk, it.ccgSaleRnk);
-    if (isDestination(it, score)) return true;
     if (!m || /\(주\)|㈜|주식회사/.test(it.merNm || '') && (it.merNm || '').indexOf('/') === -1) return false;
     var f = tasteFeatures(it), z = m.intercept;
     for (var i = 0; i < m.features.length; i++) z += m.coef[i] * (((f[m.features[i]] || 0) - m.mean[i]) / (m.scale[i] || 1));
-    return 1 / (1 + Math.exp(-z)) >= m.thr;
+    var prob = 1 / (1 + Math.exp(-z));
+    return prob >= m.thr || (prob >= (m.gate || 1) && isDestination(it, scoreOf(it.allSaleRnk, it.ccgSaleRnk)));
   }
 
   // shared helpers for map.js

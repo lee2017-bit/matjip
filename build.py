@@ -375,7 +375,8 @@ CHAIN_KNOWN = ("스타벅스", "메가엠지씨", "메가커피", "컴포즈", "
                "공차", "더벤티", "매머드", "바나프레소", "텐퍼센트", "맥도날드", "롯데리아", "버거킹", "케이에프씨", "kfc", "맘스터치",
                "써브웨이", "서브웨이", "파리바게뜨", "뚜레쥬르", "배스킨", "던킨", "크리스피크림", "이삭토스트", "본죽", "교촌",
                "비에이치씨", "bhc", "비비큐", "bbq", "굽네", "도미노", "피자헛", "김밥천국", "한솥", "본도시락", "새마을식당",
-               "홍콩반점", "역전할머니", "신전떡볶이", "엽기떡볶이", "죠스떡볶이", "설빙", "아웃백", "빕스", "애슐리")
+               "홍콩반점", "역전할머니", "신전떡볶이", "엽기떡볶이", "죠스떡볶이", "설빙", "아웃백", "빕스", "애슐리",
+               "타코벨", "강강술래", "놀부")
 FRANCHISE: set = set()
 
 
@@ -462,13 +463,18 @@ def taste_features(r: dict) -> dict:
     return f
 
 
+DEST_GATE = 0.35  # 찾아가는 맛집 규칙도 취향 모델 상위 35% 안에 들어야 한다 (호텔 식당·구내식당 등 걸러내기)
+DEST_BAD = re.compile(r"호스피탈리티|푸드앤|호텔|리조트|컨벤션|케이터링|푸드서비스|외식산업|에프앤비|F&B|PC|피씨|노래|만화|스터디|"
+                      r"_NICE|\(구\)|휴게소|푸드코트|병원|대학교|인문대|학생식당|구내식당|식당\d|사조", re.I)
+
+
 def is_destination(r: dict) -> bool:
     """찾아가서 먹는 유명한 집: 매출점수 90점 이상 + 동네 주민 위주가 아님 + 프랜차이즈 아님 + 식사 업종.
     모델은 주인장 목록에서 '주말·저녁에 찾아가는 집'을 주로 배워서 '평일 점심 줄 서는 노포'를 놓치기 쉬워 규칙으로 더한다.
     Keep in sync with isDestination() in src/app.js."""
     g = GROUP_OF.get(r.get("merTpbuzNm"), "etc")
     return (r.get("_score", score_of(r)) >= 90 and not r.get("loclPrsnPpltYn") and not is_chain(r)
-            and g not in ("drink", "cafe", "quick", "etc"))
+            and g not in ("drink", "cafe", "quick", "etc") and not DEST_BAD.search(r.get("merNm") or ""))
 
 
 def taste_prob(r: dict) -> float:
@@ -690,10 +696,11 @@ def main():
         return bool(re.search(CORP, raw)) and "/" not in raw and not re.search(r"\(([^)]{2,})\)\s*$", raw.split("/")[0])
     others = sorted((r for r in places.values() if not r["_pick"] and not corp_only(r)), key=lambda r: -taste_prob(r)) if TASTE else []
     taste_thr = 1.0
+    gate_p = taste_prob(others[min(len(others) - 1, int(len(others) * DEST_GATE))]) if others else 1.0
     for i, r in enumerate(others):
         top = (i + 1) / len(others)
         r["_taste_p"] = taste_prob(r)
-        r["_taste"] = top <= TASTE_TOP or is_destination(r)
+        r["_taste"] = top <= TASTE_TOP or (is_destination(r) and r["_taste_p"] >= gate_p)
         r["_taste_top"] = max(1, math.ceil(top * 100))
         if top <= TASTE_TOP:
             taste_thr = r["_taste_p"]
@@ -882,7 +889,7 @@ def main():
         {"v": 2, "cats": cats, "catGroup": [GROUP_OF.get(c, "etc") for c in cats],
          "areas": [[sl, area_name[sl]] for sl in slugs], "groups": GROUP_NAME, "places": index,
          "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN),
-         "taste": ({k: TASTE[k] for k in ("features", "mean", "scale", "coef", "intercept")} | {"thr": taste_thr}) if TASTE else None},
+         "taste": ({k: TASTE[k] for k in ("features", "mean", "scale", "coef", "intercept")} | {"thr": taste_thr, "gate": gate_p}) if TASTE else None},
         ensure_ascii=False, separators=(",", ":")))
 
     # ---- home
