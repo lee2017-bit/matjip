@@ -2,6 +2,9 @@
 //
 //   GET https://<이름>.<계정>.workers.dev/?q=가게이름        예) ?q=진주회관, ?q=을지로 진주회관
 //   → eat.pl 잇플 가맹점 이름 검색(k-skill 프록시)을 불러 이름이 맞는 가게들을 돌려준다.
+//   GET https://<이름>.<계정>.workers.dev/?lat=37.56&lng=126.97   (지도 '내 위치')
+//   → 좌표의 동 이름을 찾고(k-skill 프록시의 카카오 좌표→주소) 그 동의 eat.pl 매출 상위 가게를 돌려준다.
+//   모든 가게에 WGS84 위경도(lat, lng)를 붙여 준다.
 //
 // 설정 (선택, Cloudflare 대시보드 → Worker → Settings → Variables and Secrets):
 //   ALLOW_ORIGIN  (Text)  기본값 https://lee2017-bit.github.io
@@ -11,6 +14,7 @@
 // 방문자 한 명이 버튼을 눌렀을 때 한 번(최대 3번) 조회하는 개인 검색 용도로만 쓴다.
 
 const PROXY = 'https://k-skill-proxy.nomadamas.org/v1/bccard-eatpl/search';
+const COORD2ADDR = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/coord2address';
 const CACHE_TTL = 24 * 3600;
 
 export default {
@@ -20,7 +24,10 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     if (request.method !== 'GET') return json({ message: 'GET only' }, 405, cors);
 
-    const q = (new URL(request.url).searchParams.get('q') || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    const params = new URL(request.url).searchParams;
+    const lat = parseFloat(params.get('lat')), lng = parseFloat(params.get('lng'));
+    if (!isNaN(lat) && !isNaN(lng)) return near(lat, lng, cors, ctx);
+    const q = (params.get('q') || '').trim().replace(/\s+/g, ' ').slice(0, 40);
     if (q.length < 2) return json({ message: '두 글자 이상 입력해 주세요.' }, 400, cors);
 
     const cache = caches.default;
@@ -47,7 +54,7 @@ export default {
     items.sort((a, b) => (a.allSaleRnk ?? 999) - (b.allSaleRnk ?? 999));
     const body = {
       query: q,
-      results: items.slice(0, 20).map(item => ({ item })),
+      results: items.slice(0, 20).map(item => ({ item: withLatLng(item) })),
       message: items.length ? '' : 'BC카드 결제 데이터에서 이 이름의 가게를 찾지 못했어요. 간판 이름 그대로(지점명 빼고) 검색해 보세요.',
     };
     ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(body), {
@@ -57,8 +64,29 @@ export default {
   },
 };
 
+async function near(lat, lng, cors, ctx) {
+  if (lat < 33 || lat > 39 || lng < 124 || lng > 132) return json({ results: [], message: '국내 위치만 찾을 수 있어요.' }, 400, cors);
+  const cache = caches.default;
+  const key = new Request('https://cache.matjip/near/' + lat.toFixed(3) + ',' + lng.toFixed(3));  // 약 100m 격자
+  const hit = await cache.match(key);
+  if (hit) return withHeaders(hit, cors);
+  const r = await fetch(COORD2ADDR + '?x=' + lng + '&y=' + lat, { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
+  if (!r.ok) return json({ results: [], message: '위치의 동 이름을 찾지 못했어요.' }, 502, cors);
+  const doc = ((await r.json()).documents || [])[0] || {};
+  const a = doc.address || {};
+  const area = [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
+  if (!area) return json({ results: [], message: '위치의 동 이름을 찾지 못했어요.' }, 404, cors);
+  const items = await eatpl({ name: '', location: area });
+  if (items === null) return json({ results: [], message: '지금은 조회가 몰려 있어요. 잠시 뒤 다시 시도해 주세요.' }, 503, cors);
+  const body = { area, results: items.map(item => ({ item: withLatLng(item) })), message: items.length ? '' : area + '에서 가게를 찾지 못했어요.' };
+  ctx.waitUntil(cache.put(key, new Response(JSON.stringify(body), {
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'max-age=' + CACHE_TTL },
+  })));
+  return json(body, 200, cors);
+}
+
 async function eatpl({ name, location }) {
-  const u = PROXY + '?location=' + encodeURIComponent(location) + '&merNm=' + encodeURIComponent(name);
+  const u = PROXY + '?location=' + encodeURIComponent(location) + (name ? '&merNm=' + encodeURIComponent(name) : '');
   for (const wait of [0, 2500]) {
     if (wait) await sleep(wait);
     const r = await fetch(u, { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
@@ -79,4 +107,35 @@ function withHeaders(res, headers) {
   const r = new Response(res.body, res);
   for (const [k, v] of Object.entries(headers)) r.headers.set(k, v);
   return r;
+}
+
+// eat.pl 좌표(TM128/KATEC, Bessel) → WGS84. build.py 의 tm128_to_wgs84 와 같은 계산.
+function withLatLng(item) {
+  const x = parseFloat(item.xaxsVal), y = parseFloat(item.yaxsVal);
+  if (isNaN(x) || isNaN(y)) return item;
+  const [lat, lng] = tm128ToWgs84(x, y);
+  return (lat > 33 && lat < 39 && lng > 124 && lng < 132) ? { ...item, lat: +lat.toFixed(5), lng: +lng.toFixed(5) } : item;
+}
+
+function tm128ToWgs84(x, y) {
+  const a = 6377397.155, f = 1 / 299.1528128, e2 = 2 * f - f * f, ep2 = e2 / (1 - e2);
+  const k0 = 0.9999, lat0 = 38 * Math.PI / 180, lon0 = 128 * Math.PI / 180, fe = 400000, fn = 600000;
+  const mer = phi => a * ((1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * phi
+    - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * Math.sin(2 * phi)
+    + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * Math.sin(4 * phi) - (35 * e2 ** 3 / 3072) * Math.sin(6 * phi));
+  const mu = (mer(lat0) + (y - fn) / k0) / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256));
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const phi1 = mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * Math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * Math.sin(4 * mu)
+    + (151 * e1 ** 3 / 96) * Math.sin(6 * mu) + (1097 * e1 ** 4 / 512) * Math.sin(8 * mu);
+  const n1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) ** 2), t1 = Math.tan(phi1) ** 2, c1 = ep2 * Math.cos(phi1) ** 2;
+  const r1 = a * (1 - e2) / (1 - e2 * Math.sin(phi1) ** 2) ** 1.5, d = (x - fe) / (n1 * k0);
+  const lat = phi1 - (n1 * Math.tan(phi1) / r1) * (d ** 2 / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * ep2) * d ** 4 / 24
+    + (61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * ep2 - 3 * c1 ** 2) * d ** 6 / 720);
+  const lon = lon0 + (d - (1 + 2 * t1 + c1) * d ** 3 / 6 + (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * ep2 + 24 * t1 ** 2) * d ** 5 / 120) / Math.cos(phi1);
+  const n = a / Math.sqrt(1 - e2 * Math.sin(lat) ** 2);
+  const X = n * Math.cos(lat) * Math.cos(lon) - 146.43, Y = n * Math.cos(lat) * Math.sin(lon) + 507.89, Z = n * (1 - e2) * Math.sin(lat) + 681.46;
+  const a2 = 6378137.0, f2 = 1 / 298.257223563, e22 = 2 * f2 - f2 * f2, p = Math.hypot(X, Y);
+  let lat2 = Math.atan2(Z, p * (1 - e22));
+  for (let i = 0; i < 6; i++) { const n2 = a2 / Math.sqrt(1 - e22 * Math.sin(lat2) ** 2); lat2 = Math.atan2(Z + e22 * n2 * Math.sin(lat2), p); }
+  return [lat2 * 180 / Math.PI, Math.atan2(Y, X) * 180 / Math.PI];
 }

@@ -297,6 +297,52 @@ def sex_tag(r: dict) -> str:
     return g[0] if g[0] == g[1] else "mix"
 
 
+def tm128_to_wgs84(x: float, y: float) -> tuple[float, float]:
+    """eat.pl 좌표(TM128/KATEC, Bessel) → WGS84 위경도. 카카오 좌표와 비교해 오차 수십 m 이내."""
+    a, f = 6377397.155, 1 / 299.1528128
+    e2 = 2 * f - f * f
+    ep2 = e2 / (1 - e2)
+    k0, lat0, lon0, fe, fn = 0.9999, math.radians(38), math.radians(128), 400000, 600000
+
+    def meridian(phi):
+        return a * ((1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256) * phi
+                    - (3 * e2 / 8 + 3 * e2 ** 2 / 32 + 45 * e2 ** 3 / 1024) * math.sin(2 * phi)
+                    + (15 * e2 ** 2 / 256 + 45 * e2 ** 3 / 1024) * math.sin(4 * phi)
+                    - (35 * e2 ** 3 / 3072) * math.sin(6 * phi))
+    mu = (meridian(lat0) + (y - fn) / k0) / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
+    e1 = (1 - math.sqrt(1 - e2)) / (1 + math.sqrt(1 - e2))
+    phi1 = (mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * math.sin(4 * mu)
+            + (151 * e1 ** 3 / 96) * math.sin(6 * mu) + (1097 * e1 ** 4 / 512) * math.sin(8 * mu))
+    n1 = a / math.sqrt(1 - e2 * math.sin(phi1) ** 2)
+    t1, c1 = math.tan(phi1) ** 2, ep2 * math.cos(phi1) ** 2
+    r1 = a * (1 - e2) / (1 - e2 * math.sin(phi1) ** 2) ** 1.5
+    d = (x - fe) / (n1 * k0)
+    lat = phi1 - (n1 * math.tan(phi1) / r1) * (d ** 2 / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * ep2) * d ** 4 / 24
+                                               + (61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * ep2 - 3 * c1 ** 2) * d ** 6 / 720)
+    lon = lon0 + (d - (1 + 2 * t1 + c1) * d ** 3 / 6 + (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * ep2 + 24 * t1 ** 2) * d ** 5 / 120) / math.cos(phi1)
+    # Bessel(Tokyo) → WGS84: 지심 좌표로 바꿔 한국 지역 이동량 적용
+    n = a / math.sqrt(1 - e2 * math.sin(lat) ** 2)
+    X = n * math.cos(lat) * math.cos(lon) - 146.43
+    Y = n * math.cos(lat) * math.sin(lon) + 507.89
+    Z = n * (1 - e2) * math.sin(lat) + 681.46
+    a2, f2 = 6378137.0, 1 / 298.257223563
+    e22 = 2 * f2 - f2 * f2
+    p = math.hypot(X, Y)
+    lat2 = math.atan2(Z, p * (1 - e22))
+    for _ in range(6):
+        n2 = a2 / math.sqrt(1 - e22 * math.sin(lat2) ** 2)
+        lat2 = math.atan2(Z + e22 * n2 * math.sin(lat2), p)
+    return math.degrees(lat2), math.degrees(math.atan2(Y, X))
+
+
+def latlng(r: dict):
+    try:
+        lat, lng = tm128_to_wgs84(float(r.get("xaxsVal")), float(r.get("yaxsVal")))
+    except (TypeError, ValueError):
+        return None
+    return (round(lat, 5), round(lng, 5)) if 33 < lat < 39 and 124 < lng < 132 else None
+
+
 def mer_id(url) -> str:
     return str(url or "").rstrip("/").rsplit("/", 1)[-1]
 
@@ -345,7 +391,7 @@ def card(r: dict, rank: int) -> str:
   <p class="meta">{'영업 예상 ' + esc(hrs) + ' · ' if hrs else ''}{esc(holidays(r.get('hldyDwk')))}{(' · 붐비는 때 ' + esc(peak)) if peak else ''}</p>
   {f'<p class="meta">주 고객 {esc(cust_txt)}</p>' if cust_txt else ''}
   {''.join(tags)}
-  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 자세히 보기 →</a><button type="button" class="share">공유</button></div>
+  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 자세히 보기 →</a>{'<button type="button" class="map-btn">지도</button>' if latlng(r) else ''}<button type="button" class="share">공유</button></div>
 </li>"""
 
 
@@ -374,7 +420,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 </head><body data-root="{up}"{f' data-api="{esc(LOOKUP_API)}"' if LOOKUP_API else ''}>
 <div id="inapp" class="inapp" hidden></div>
 <header class="top"><a class="brand" href="{up}index.html">{SITE_NAME}</a><span class="tagline">{TAGLINE}</span>
-<nav class="topnav"><a href="{up}index.html#search">맛집 점수 검색</a><a href="{up}picks.html">주인장 픽</a></nav></header>
+<nav class="topnav"><a href="{up}index.html#search">점수 검색</a><a href="{up}map.html">지도</a><a href="{up}picks.html">주인장 픽</a></nav></header>
 <main>{body}</main>
 <footer>
 <p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong> (최근 1개월 매출 순위). 백분위는 같은 업종 안에서의 매출 순위이며 낮을수록 상위입니다.</p>
@@ -438,7 +484,7 @@ def main():
     OUT.mkdir(exist_ok=True)
     for d in ("area", "cat", "assets"):
         (OUT / d).mkdir(exist_ok=True)
-    for f in ("style.css", "app.js"):
+    for f in ("style.css", "app.js", "map.js"):
         (OUT / "assets" / f).write_text((SRC / f).read_text())
     if (SRC / "og.png").exists():
         (OUT / "assets" / "og.png").write_bytes((SRC / "og.png").read_bytes())
@@ -588,11 +634,46 @@ def main():
                                                "오마카세, 파인다이닝, 비스트로, 한우·스테이크하우스 등 가격대 있는 집을 BC카드 결제 매출로 줄 세웠습니다.",
                                                body, "premium.html", 0))
 
+    # ---- 지도
+    body = """
+<section class="hero small map-hero">
+  <p class="crumb"><a href="index.html">홈</a> › 지도</p>
+  <h1>지도로 보는 <span>매출맛집</span></h1>
+  <p class="sub">지도를 움직이면 그 화면 안에서 매출점수가 높은 집을 보여 드려요. <b>내 위치</b>를 누르면 가까운 순으로 정리하고, 모아 둔 데이터가 없는 동네도 실시간으로 찾아봐요.</p>
+</section>
+<div class="map-tools">
+  <button type="button" id="locate" class="locate">◎ 내 위치</button>
+  <button type="button" id="here" class="here" hidden>이 지역 실시간으로 찾기</button>
+  <span id="map-status" class="map-status" aria-live="polite"></span>
+</div>
+<nav class="filters" id="map-filter" aria-label="보기">
+  <button type="button" data-v="meal" class="on">식사</button><button type="button" data-v="">전체</button>
+  <button type="button" data-v="korean">한식</button><button type="button" data-v="meat">고기</button>
+  <button type="button" data-v="seafood">해산물</button><button type="button" data-v="japanese">일식</button>
+  <button type="button" data-v="chinese">중식</button><button type="button" data-v="western">양식·아시안</button>
+  <button type="button" data-v="quick">분식·간편식</button><button type="button" data-v="drink">술집</button>
+  <button type="button" data-v="cafe">카페·디저트</button><button type="button" data-v="talk">대화하기 좋은 곳</button>
+  <button type="button" data-v="premium">고급</button><button type="button" data-v="pick">주인장 픽</button>
+</nav>
+<div id="map" class="map" role="region" aria-label="맛집 지도"></div>
+<p class="count" id="map-count"></p>
+<ol class="list" id="map-list"></ol>
+<p class="small-note sub">지도 © OpenStreetMap 기여자. 가게 위치는 결제 데이터의 좌표라 실제 입구와 수십 m 다를 수 있어요.</p>
+"""
+    html_map = page(f"내 주변 맛집 지도 — 매출점수로 보는 동네 맛집 | {SITE_NAME}",
+                    "지도에서 화면 안 매출점수 높은 집을 보고, 내 위치 주변 맛집을 가까운 순으로. BC카드 결제 데이터 기반.",
+                    body, "map.html", 0)
+    html_map = html_map.replace('<link rel="stylesheet" href="assets/style.css">',
+                                '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">\n<link rel="stylesheet" href="assets/style.css">')
+    html_map = html_map.replace('<script src="assets/app.js"></script>',
+                                '<script src="assets/app.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>\n<script src="assets/map.js"></script>')
+    (OUT / "map.html").write_text(html_map)
+
     # ---- search index (loaded lazily by the home page search box)
     index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
               r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0,
               1 if (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) else 0, 1 if is_premium(r) else 0,
-              1 if r.get("empyVsitYn") else 0]
+              1 if r.get("empyVsitYn") else 0, *(latlng(r) or (0, 0))]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
         {"areas": area_name, "groups": GROUP_NAME, "places": index}, ensure_ascii=False, separators=(",", ":")))
@@ -611,6 +692,7 @@ def main():
   <h1>내가 아는 그 집, <span>매출점수</span>는 몇 점?</h1>
   <p class="sub">별점이나 광고 말고, BC카드 최근 1개월 결제 데이터로 실제로 얼마나 팔리는 집인지 0~100점으로 보여 드려요. 가게 이름이나 동네를 검색해 보세요.</p>
   <input id="q" type="search" placeholder="가게 이름이나 동네 (예: 진주회관, 을지로)" aria-label="가게 이름이나 동네 검색" autocomplete="off">
+  <a class="near-cta" href="map.html#near">◎ 내 주변 맛집 지도로 보기</a>
   <div id="results" class="results" aria-live="polite"></div>
 </section>
 <section class="browse">
@@ -636,7 +718,7 @@ def main():
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
 
     if BASE_URL:
-        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html"]
+        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html"]
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)

@@ -82,6 +82,15 @@
     return { name: c.querySelector('h3').textContent, score: c.querySelector('.score b').textContent, grade: c.querySelector('.score small').textContent };
   }
   document.addEventListener('click', function (e) {
+    var m = e.target.closest ? e.target.closest('button.map-btn') : null;
+    if (!m) return;
+    var c = m.closest('.card');
+    var at = c.getAttribute('data-at');
+    var target = ROOT + 'map.html#' + (at ? 'at=' + encodeURIComponent(at) : 'p=' + (c.id || '').replace(/^p-/, ''));
+    if (location.pathname.slice(-8) === 'map.html' && window.MATJIP && window.MATJIP.focus) { history.replaceState(null, '', target); window.MATJIP.focus(); window.scrollTo(0, 0); }
+    else location.href = target;
+  });
+  document.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('button.share') : null;
     if (!b) return;
     var c = b.closest('.card');
@@ -227,11 +236,16 @@
     var act = el('div', 'actions');
     var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
     act.appendChild(go);
+    if (p.lat) {
+      var mb = el('button', 'map-btn', '지도'); mb.type = 'button';
+      if (p.live) { li.setAttribute('data-at', p.lat + ',' + p.lng + ',' + p.name); }
+      act.appendChild(mb);
+    }
     var sb = el('button', 'share', '공유'); sb.type = 'button'; act.appendChild(sb);
     li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15] }; }
 
   function liveButton(term, box) {
     if (!API) {
@@ -251,7 +265,8 @@
           var it = x.item; found++;
           ul.appendChild(placeCard({ name: cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
             score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과',
-            busy: isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: isPremium(it), q: term }));
+            busy: isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: isPremium(it), q: term,
+            lat: it.lat, lng: it.lng, live: true }));
         });
         b.remove();
         if (found) { box.appendChild(el('p', 'count', 'BC카드 결제 데이터에서 ' + found + '곳을 찾았어요')); box.appendChild(ul); }
@@ -326,6 +341,10 @@
       document.getElementById('search').scrollIntoView();
     });
   }
+
+  // shared helpers for map.js
+  window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
+    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path

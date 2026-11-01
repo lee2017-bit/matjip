@@ -7,7 +7,8 @@
 - `build.py` — 동네별 순위를 받아 `site/`에 HTML과 검색 색인(`assets/places.json`)을 만든다 (Python 표준 라이브러리만 사용)
 - `data/cache/` — 동네별 eat.pl 응답 캐시 (매주 갱신)
 - `data/picks.json` — "주인장 픽": 사이트 주인이 카카오맵에 모아 온 맛집 중 eat.pl에 있는 곳 (`tools/picks.py`로 생성)
-- `worker/lookup.js` — 목록에 없는 가게를 이름으로 실시간 조회하는 Cloudflare Worker (선택, 키 불필요, 설정은 [docs/realtime-setup.md](docs/realtime-setup.md))
+- `worker/lookup.js` — 목록에 없는 가게를 이름으로, 또는 지도 '내 위치' 주변 동네를 실시간 조회하는 Cloudflare Worker (키 불필요, main의 `worker/`가 바뀌면 Cloudflare가 자동 배포, [docs/realtime-setup.md](docs/realtime-setup.md))
+- `src/map.js` — 지도 페이지(Leaflet + OpenStreetMap). eat.pl 좌표(TM128)는 빌드 때 WGS84로 변환
 - `data/tags.json` — 주인장이 확인한 '룸 있음'·'고급' 가게 (merUrl 또는 가게 이름)
 - `.github/workflows/pages.yml` — GitHub Pages 배포, 매주 월요일 데이터 갱신
 
