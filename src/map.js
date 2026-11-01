@@ -110,6 +110,7 @@
       (d.results || []).forEach(function (x) {
         var it = x.item;
         if (!it || !it.merUrl || !it.lat || known[it.merUrl]) return;
+        if (!(parseFloat(it.allSaleRnk) <= 50) && !M.isPremium(it)) return;  // 매출 하위 절반은 빼고 (build.py LOW_CUT)
         known[it.merUrl] = 1; liveItems.push(fromLive(it)); added++;
       });
       say(d.area ? d.area + ' 매출 상위 가게를 불러왔어요' + (added ? ' (새로 ' + added + '곳)' : '') : (d.message || ''));

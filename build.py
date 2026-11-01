@@ -35,6 +35,7 @@ LOOKUP_API = os.environ.get("LOOKUP_API", "").strip().rstrip("/")
 SITE_NAME = "매출맛집"
 TAGLINE = "별점 말고, 실제로 많이 팔리는 집"
 KST = timezone(timedelta(hours=9))
+LOW_CUT = 50  # 전국 같은 업종 매출 하위 절반(상위 50% 밖)은 싣지 않는다. 주인장 픽·고급 추정은 예외
 ROTATE = 4  # --rotate: 매주 동네의 1/4만 새로 받는다 (한 번에 많이 부르지 않기)
 
 # category groups (eat.pl 업종명 → 사이트 분류). Order = order of the filter chips.
@@ -556,6 +557,12 @@ def main():
         r["_tag_room"] = url in tags["room"] or bool(nm & tags["room"])
         r["_tag_premium"] = url in tags["premium"] or bool(nm & tags["premium"])
         if r.get("merTpbuzNm") in SKIP_CATS and not is_premium(r):
+            return None
+        try:
+            low = float(r.get("allSaleRnk")) > LOW_CUT
+        except (TypeError, ValueError):
+            low = True
+        if low and url not in pick_name and not is_premium(r):
             return None
         r["_score"] = score_of(r)
         r["_pick"] = url in pick_name
