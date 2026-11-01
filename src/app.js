@@ -123,49 +123,61 @@
     });
   });
 
-  // ---------------------------------------------------------------- list filters
+  // ---------------------------------------------------------------- filters
+  // 버튼 줄(.toggles): 여러 개를 함께 켤 수 있다 (모두 만족하는 집만). '전체'는 모두 끄기.
+  // 드롭다운(select[data-key]): 하나만 고른다. 지도 페이지도 같은 방식 (map.js 가 onFilter 로 받는다).
+  function bindToggles(nav, onChange) {
+    var btns = nav.querySelectorAll('button');
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var v = b.getAttribute('data-v');
+        if (!v) btns.forEach(function (x) { x.classList.toggle('on', !x.getAttribute('data-v')); });
+        else {
+          b.classList.toggle('on');
+          var any = nav.querySelector('button.on[data-v]:not([data-v=""])');
+          nav.querySelector('button[data-v=""]').classList.toggle('on', !any);
+        }
+        onChange();
+      });
+    });
+  }
+  function toggleValues(nav) {
+    return Array.prototype.map.call(nav.querySelectorAll('button.on'), function (b) { return b.getAttribute('data-v'); }).filter(Boolean);
+  }
+  // 기본값이 아닌 드롭다운은 진하게 표시
+  document.querySelectorAll('select[data-key]').forEach(function (sel) {
+    var def = Array.prototype.filter.call(sel.options, function (o) { return o.defaultSelected; })[0] || sel.options[0];
+    var mark = function () { sel.classList.toggle('set', sel.value !== def.value); };
+    sel.addEventListener('change', mark); mark();
+  });
   var list = document.getElementById('list');
-  var navs = document.querySelectorAll('nav.filters[data-key]');
   function applyFilters() {
     if (!list) return;
+    var tnav = document.querySelector('.sticky nav.toggles');
+    var need = tnav ? toggleValues(tnav) : [];
     var want = {};
-    navs.forEach(function (n) {
-      var on = n.querySelector('button.on');
-      want[n.getAttribute('data-key')] = on ? on.getAttribute('data-v') : '';
-    });
+    document.querySelectorAll('.sticky select[data-key]').forEach(function (sel) { if (sel.value) want[sel.getAttribute('data-key')] = sel.value; });
     var shown = 0;
     list.querySelectorAll('.card').forEach(function (c) {
-      var ok = true;
+      var f = (c.getAttribute('data-f') || '').split(' ');
+      var ok = need.every(function (t) { return f.indexOf(t) !== -1; });
       for (var k in want) {
-        if (!want[k]) continue;
+        if (!ok) break;
         var vals = k === 'c' ? [c.getAttribute('data-c') || ''] : (c.getAttribute('data-' + k) || '').split(' ');
-        if (vals.indexOf(want[k]) === -1) { ok = false; break; }
+        if (vals.indexOf(want[k]) === -1) ok = false;
       }
       c.hidden = !ok;
       if (ok) { shown++; var r = c.querySelector('.rank'); if (r) r.textContent = shown; }
     });
     var count = document.getElementById('count');
-    if (count) count.textContent = shown ? shown + '곳' : '조건에 맞는 곳이 없어요. 다른 버튼을 눌러 보세요.';
-    var fc = document.getElementById('fcount');  // 필터 버튼에 켜진 조건 수 (프랜차이즈 기본값은 빼고)
-    if (fc) {
-      var n = 0;
-      document.querySelectorAll('.fpanel nav.filters').forEach(function (nv) {
-        var on = nv.querySelector('button.on'), v = on ? on.getAttribute('data-v') : '';
-        if (v && !(nv.getAttribute('data-key') === 'k' && v === 'indie')) n++;
-      });
-      fc.textContent = n ? ' ' + n : '';
-    }
+    if (count) count.textContent = shown ? shown + '곳' : '조건에 맞는 곳이 없어요. 조건을 줄여 보세요.';
   }
-  navs.forEach(function (n) {
-    n.querySelectorAll('button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        n.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        applyFilters();
-      });
-    });
-  });
-  applyFilters();
+  if (list) {
+    var tn = document.querySelector('.sticky nav.toggles');
+    if (tn) bindToggles(tn, applyFilters);
+    document.querySelectorAll('.sticky select[data-key]').forEach(function (sel) { sel.addEventListener('change', applyFilters); });
+    applyFilters();
+  }
 
   // ---------------------------------------------------------------- "오늘 점심 뭐 먹지?" picker
   var pick = document.getElementById('pick');
@@ -230,7 +242,7 @@
         d.places = d.places.map(function (q) {
           var f = q[8];
           return [q[0], d.catGroup[q[1]], d.cats[q[1]], q[2], q[3], q[4], q[5], q[6], q[7] >= 0 ? areaSlug[q[7]] : '',
-            f & 1 ? 1 : 0, f & 2 ? 1 : 0, f & 4 ? 1 : 0, f & 8 ? 1 : 0, f & 16 ? 1 : 0, q[9], q[10], f & 32 ? 1 : 0, f & 64 ? 1 : 0];
+            f & 1 ? 1 : 0, f & 2 ? 1 : 0, f & 4 ? 1 : 0, f & 8 ? 1 : 0, f & 16 ? 1 : 0, q[9], q[10], f & 32 ? 1 : 0, f & 64 ? 1 : 0, f];
         });
         d.areas = areaMap;
       }
@@ -301,7 +313,25 @@
     li.appendChild(more);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17],
+      mine: p[9] || p[17], ages: agesFromBits(p[18] || 0), sex: sexFromBits(p[18] || 0) }; }
+  function agesFromBits(f) {
+    return [['young', 128], ['20', 256], ['30', 512], ['40', 1024], ['50', 2048]].filter(function (x) { return f & x[1]; }).map(function (x) { return x[0]; });
+  }
+  function sexFromBits(f) { return f & 4096 ? 'f' : f & 8192 ? 'm' : f & 16384 ? 'mix' : ''; }
+  // 실시간 가게: 주 고객 1·2위로 같은 값을 만든다 (build.py age_tags / sex_tag 와 같은 규칙)
+  function custTags(it) {
+    var c = it.vistCstmrRnkList || {}, ages = [], g = [];
+    ['rk01', 'rk02'].forEach(function (k) {
+      var v = c[k] || '', m = /(\d+)대/.exec(v);
+      if (m) ages.push(Math.min(parseInt(m[1], 10), 50));
+      g.push(v.indexOf('여성') !== -1 ? 'f' : v.indexOf('남성') !== -1 ? 'm' : '');
+    });
+    var tags = ages.filter(function (a) { return a >= 20; }).map(String);
+    if (ages.length === 2 && ages.every(function (a) { return a === 20 || a === 30; })) tags.push('young');
+    var sex = g.indexOf('') !== -1 ? '' : g[0] === g[1] ? g[0] : 'mix';
+    return { ages: tags, sex: sex };
+  }
 
   function liveButton(term, box) {
     if (!API) {
@@ -405,7 +435,8 @@
 
   // shared helpers for map.js
   window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
-    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, isChainName: isChainName, data: function () { return data; } };
+    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, isChainName: isChainName,
+    bindToggles: bindToggles, toggleValues: toggleValues, custTags: custTags, data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path

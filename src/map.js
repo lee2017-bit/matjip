@@ -7,8 +7,8 @@
   var listEl = document.getElementById('map-list');
   var countEl = document.getElementById('map-count');
   var hereBtn = document.getElementById('here');
-  var filter = 'meal';      // 종류
-  var theme = '';           // 테마: 주인장 취향·조용한 곳·고급·주인장 픽·회식
+  var need = [];            // 함께 켠 조건: mine(주인장 취향+픽) talk premium group
+  function sel(id) { var e = document.getElementById(id); return e ? e.value : ''; }
   var me = null;            // {lat, lng}
   var liveItems = [];       // 실시간 조회로 받은 가게 (places.json 에 없는 곳)
   var focusMarker = null;
@@ -27,21 +27,15 @@
     return 2 * R * Math.asin(Math.sqrt(x));
   }
   function fmtDist(m) { return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km'; }
-  var noChain = true;       // 프랜차이즈 빼고 보기 (기본)
   function pass(p) {
-    if (noChain && p.chain) return false;
-    if (theme === 'taste' && !p.taste) return false;
-    if (theme === 'talk' && !p.talk) return false;
-    if (theme === 'premium' && !p.premium) return false;
-    if (theme === 'pick' && !p.pick) return false;
-    if (theme === 'group' && !p.group) return false;
-    if (!filter) return true;
-    if (filter === 'meal') return p.g !== 'drink' && p.g !== 'cafe';
-    if (filter === 'talk') return !!p.talk;
-    if (filter === 'premium') return !!p.premium;
-    if (filter === 'pick') return !!p.pick;
-    if (filter === 'taste') return !!p.taste;
-    return p.g === filter;
+    for (var i = 0; i < need.length; i++) if (!p[need[i]]) return false;
+    var kind = sel('map-kind'), age = sel('map-age'), sex = sel('map-sex'), chain = sel('map-chain');
+    if (chain === 'indie' && p.chain) return false;
+    if (kind === 'meal' && (p.g === 'drink' || p.g === 'cafe')) return false;
+    if (kind && kind !== 'meal' && p.g !== kind) return false;
+    if (age && (p.ages || []).indexOf(age) === -1) return false;
+    if (sex && p.sex !== sex) return false;
+    return true;
   }
   function color(s) { return s >= 90 ? '#c2410c' : s >= 80 ? '#ea580c' : s >= 70 ? '#fb923c' : s >= 60 ? '#fdba74' : '#a8a29e'; }
   var sortBy = 'score';     // 내 위치를 켜면 '점수순 / 가까운 순' 전환
@@ -60,7 +54,8 @@
     return { name: M.cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
       score: M.scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl,
       busy: M.isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: M.isPremium(it),
-      lat: it.lat, lng: it.lng, live: true, note: '실시간 조회 결과', g: groupOf(it.merTpbuzNm), chain: M.isChainName(it.merNm) };
+      lat: it.lat, lng: it.lng, live: true, g: groupOf(it.merTpbuzNm), chain: M.isChainName(it.merNm),
+      ages: M.custTags(it).ages, sex: M.custTags(it).sex, mine: false };
   }
 
   function popup(p) {
@@ -168,31 +163,20 @@
   M.focus = focus;
 
   document.getElementById('locate').addEventListener('click', locate);
-  var chainBtn = document.getElementById('chain-toggle');
-  if (chainBtn) chainBtn.addEventListener('click', function () {
-    noChain = !noChain; chainBtn.classList.toggle('on', noChain);
-    chainBtn.textContent = noChain ? '✓ 프랜차이즈 빼고' : '프랜차이즈 포함'; render();
+  var tnav = document.getElementById('map-toggles');
+  if (tnav) M.bindToggles(tnav, function () {
+    need = M.toggleValues(tnav);
+    // 대화하기 좋은 곳·고급은 카페·술집도 보이게 종류를 '모든 종류'로
+    var k = document.getElementById('map-kind');
+    if (k && k.value === 'meal' && (need.indexOf('talk') !== -1 || need.indexOf('premium') !== -1)) k.value = '';
+    render();
   });
-  if (hereBtn) hereBtn.addEventListener('click', function () { var c = map.getCenter(); live(c.lat, c.lng); });
-  document.querySelectorAll('#map-filter button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('#map-filter button').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on'); filter = b.getAttribute('data-v'); render();
-    });
+  ['map-kind', 'map-age', 'map-sex', 'map-chain'].forEach(function (id) {
+    var e = document.getElementById(id); if (e) e.addEventListener('change', render);
   });
-  document.querySelectorAll('#map-theme button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('#map-theme button').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on'); theme = b.getAttribute('data-v');
-      // 고급·조용한 곳은 카페·술집도 볼 수 있게 종류를 '전체'로
-      if (theme && filter === 'meal' && (theme === 'talk' || theme === 'premium')) {
-        var all = document.querySelector('#map-filter button[data-v=""]'); if (all) all.click(); else render();
-      } else render();
-    });
-  });
-  // 주소의 #theme=taste 처럼 테마를 바로 열 수 있게
+  // 주소의 #theme=mine 처럼 조건을 바로 켤 수 있게
   var th = /[#&]theme=(\w+)/.exec(location.hash);
-  if (th) { var tb = document.querySelector('#map-theme button[data-v="' + th[1] + '"]'); if (tb) setTimeout(function () { tb.click(); }, 0); }
+  if (th && tnav) { var tb = tnav.querySelector('button[data-v="' + th[1] + '"]'); if (tb) setTimeout(function () { tb.click(); }, 0); }
   var autoTimer = null;
   map.on('moveend', function () {
     render();

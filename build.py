@@ -493,7 +493,8 @@ def card(r: dict, rank: int) -> str:
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
                                     ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk), ("premium", premium),
-                                    ("taste", r.get("_taste")), ("hidden", r.get("_taste") and s < 70)) if on)
+                                    ("taste", r.get("_taste")), ("mine", r.get("_pick") or r.get("_taste")),
+                                    ("hidden", r.get("_taste") and s < 70)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
     more = [f'<p class="nums">전국 같은 업종 매출 상위 {pct(r.get("allSaleRnk"))}% · 구 안에서 상위 {pct(r.get("ccgSaleRnk"))}%</p>',
@@ -557,31 +558,33 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 </body></html>"""
 
 
-def chip_row(key: str, label: str, opts: list, default: str = "") -> str:
-    on = ' class="on"'
-    btns = "".join(f'<button type="button" data-v="{esc(k)}"{on if k == default else ""}>{esc(v)}</button>' for k, v in opts)
-    return f'<div class="frow"><span class="flabel">{esc(label)}</span><nav class="filters" data-key="{key}" aria-label="{esc(label)}">{btns}</nav></div>'
+AGE_OPTS = [("", "모든 연령"), ("young", "20~30대 위주"), ("20", "20대"), ("30", "30대"), ("40", "40대"), ("50", "50대 이상")]
+SEX_OPTS = [("", "모든 성별"), ("f", "여성 위주"), ("m", "남성 위주"), ("mix", "남녀 고루")]
+
+
+def select_box(key: str, label: str, opts: list, default: str = "", el_id: str = "") -> str:
+    sel = ' selected'
+    o = "".join(f'<option value="{esc(k)}"{sel if k == default else ""}>{esc(v)}</option>' for k, v in opts)
+    return f'<select{f" id=\"{el_id}\"" if el_id else ""} data-key="{key}" aria-label="{esc(label)}">{o}</select>'
 
 
 def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal",
                  chain_default: str = "indie", extra: list | None = None) -> str:
-    """종류 칩 한 줄(고정) + '필터' 버튼 안에 상황·손님·지역·프랜차이즈."""
-    rows = []
-    if purpose or extra:
-        opts = [("", "전체")]
-        if purpose:
-            opts += [("lunch", "점심 영업"), ("group", "회식"), ("talk", "대화하기 좋은 곳"), ("premium", "고급"),
-                     ("taste", "주인장 취향"), ("pick", "주인장 픽"), ("local", "동네 맛집"), ("foreign", "외국인 많이 가는 곳")]
-        opts += list(extra or [])
-        rows.append(chip_row("f", "상황", opts))
-    rows.append(chip_row("a", "손님 연령", [("", "전체"), ("young", "20~30대 위주"), ("20", "20대"), ("30", "30대"), ("40", "40대"), ("50", "50대 이상")]))
-    rows.append(chip_row("s", "손님 성별", [("", "전체"), ("f", "여성 위주"), ("m", "남성 위주"), ("mix", "남녀 고루")]))
+    """위 줄: 함께 켤 수 있는 버튼(주인장 취향·대화하기 좋은 곳…). 아래 줄: 하나만 고르는 드롭다운(종류·연령·성별·지역·프랜차이즈)."""
+    toggles = ([("mine", "🍽️ 주인장 취향"), ("talk", "🤫 대화하기 좋은 곳"), ("premium", "🍷 고급"), ("group", "👥 회식"),
+                ("lunch", "점심 영업"), ("local", "동네 맛집"), ("foreign", "외국인 많이 가는 곳")] if purpose else [])
+    toggles += list(extra or [])
+    tog = ""
+    if toggles:
+        tog = ('<nav class="filters toggles" data-key="f" aria-label="함께 고를 수 있는 조건"><button type="button" data-v="" class="on">전체</button>'
+               + "".join(f'<button type="button" data-v="{k}">{esc(v)}</button>' for k, v in toggles) + "</nav>")
+    kinds = [("meal", "식사"), ("", "모든 종류")] + [(k, n) for k, n, _ in GROUPS if k in present]
+    sels = [select_box("g", "종류", kinds, default), select_box("a", "손님 연령", AGE_OPTS), select_box("s", "손님 성별", SEX_OPTS)]
     if cities and len(cities) > 1:
-        rows.append(chip_row("c", "지역", [("", "전체")] + [(c, c) for c in cities]))
-    rows.append(chip_row("k", "프랜차이즈", [("indie", "빼고"), ("", "포함")], chain_default))
-    return f"""<div class="sticky"><nav class="filters" data-key="g" aria-label="종류">{group_chips(present, default)}</nav></div>
-<div class="listhead"><p class="count" id="count"></p>
-<details class="fpanel"><summary>필터<span id="fcount"></span></summary>{''.join(rows)}</details></div>
+        sels.append(select_box("c", "지역", [("", "모든 지역")] + [(c, c) for c in cities]))
+    sels.append(select_box("k", "프랜차이즈", [("indie", "프랜차이즈 빼고"), ("", "프랜차이즈 포함")], chain_default))
+    return f"""<div class="sticky">{tog}<div class="selects">{''.join(sels)}</div></div>
+<p class="count" id="count"></p>
 <ol class="list" id="list">
 {cards}
 </ol>"""
@@ -796,35 +799,29 @@ def main():
                                                body, "premium.html", 0))
 
     # ---- 지도
-    body = """
+    body = ("""
 <section class="hero small map-hero">
   <h1>내 주변 맛집</h1>
 </section>
 <div class="map-tools">
   <button type="button" id="locate" class="locate">◎ 내 위치</button>
   <button type="button" id="here" class="here" hidden>이 지역 실시간으로 찾기</button>
-  <button type="button" id="chain-toggle" class="chain-toggle on">✓ 프랜차이즈 빼고</button>
   <span id="map-status" class="map-status" aria-live="polite"></span>
 </div>
-<nav class="filters theme" id="map-theme" aria-label="테마">
-  <button type="button" data-v="" class="on">모든 집</button><button type="button" data-v="taste">🍽️ 주인장 취향</button>
-  <button type="button" data-v="talk">🤫 조용한 곳</button><button type="button" data-v="premium">🍷 고급</button>
-  <button type="button" data-v="pick">⭐ 주인장 픽</button><button type="button" data-v="group">👥 회식</button>
+<nav class="filters toggles" id="map-toggles" aria-label="함께 고를 수 있는 조건">
+  <button type="button" data-v="" class="on">전체</button><button type="button" data-v="mine">🍽️ 주인장 취향</button>
+  <button type="button" data-v="talk">🤫 대화하기 좋은 곳</button><button type="button" data-v="premium">🍷 고급</button>
+  <button type="button" data-v="group">👥 회식</button>
 </nav>
-<nav class="filters" id="map-filter" aria-label="종류">
-  <button type="button" data-v="meal" class="on">식사</button><button type="button" data-v="">전체</button>
-  <button type="button" data-v="korean">한식</button><button type="button" data-v="meat">고기</button>
-  <button type="button" data-v="seafood">해산물</button><button type="button" data-v="japanese">일식</button>
-  <button type="button" data-v="chinese">중식</button><button type="button" data-v="western">양식·아시안</button>
-  <button type="button" data-v="quick">분식·간편식</button><button type="button" data-v="drink">술집</button>
-  <button type="button" data-v="cafe">카페·디저트</button>
-</nav>
+<div class="selects">""" + select_box("g", "종류", [("meal", "식사"), ("", "모든 종류")] + [(k, n) for k, n, _ in GROUPS], "meal", "map-kind")
+    + select_box("a", "손님 연령", AGE_OPTS, "", "map-age") + select_box("s", "손님 성별", SEX_OPTS, "", "map-sex")
+    + select_box("k", "프랜차이즈", [("indie", "프랜차이즈 빼고"), ("", "프랜차이즈 포함")], "indie", "map-chain") + """</div>
 <div id="map" class="map" role="region" aria-label="맛집 지도"></div>
 <div class="map-listhead"><p class="count" id="map-count"></p>
 <nav class="filters sortnav" id="map-sort" aria-label="정렬" hidden><button type="button" data-v="score" class="on">점수순</button><button type="button" data-v="dist">가까운 순</button></nav></div>
 <ol class="list" id="map-list"></ol>
 <p class="small-note sub">지도 © OpenStreetMap 기여자. 가게 위치는 결제 데이터의 좌표라 실제 입구와 수십 m 다를 수 있어요.</p>
-"""
+""")
     html_map = page(f"내 주변 맛집 지도 — 매출점수로 보는 동네 맛집 | {SITE_NAME}",
                     "지도에서 화면 안 매출점수 높은 집을 보고, 내 위치 주변 맛집을 가까운 순으로. BC카드 결제 데이터 기반.",
                     body, "map.html", 0)
@@ -836,7 +833,8 @@ def main():
 
     # ---- search index (loaded lazily by the home page search box)
     # 압축 형식 (v2): [이름, 업종번호, 주소, 점수, 전국%, 구%, eat.pl id, 동네번호(-1), 플래그, 위도, 경도]
-    # 플래그 비트: 1 주인장 픽, 2 아주 붐빔, 4 대화하기 좋은 곳, 8 고급 추정, 16 회식 적합, 32 프랜차이즈. app.js load()가 풀어 쓴다.
+    # 플래그 비트: 1 주인장 픽, 2 아주 붐빔, 4 대화하기 좋은 곳, 8 고급 추정, 16 회식 적합, 32 프랜차이즈, 64 주인장 취향,
+    # 128 20~30대 위주, 256/512/1024/2048 주 고객 20·30·40·50대+, 4096 여성 위주, 8192 남성 위주, 16384 남녀 고루. app.js load()가 풀어 쓴다.
     cats = sorted({r.get("merTpbuzNm") or "" for r in ranked})
     cat_no = {c: i for i, c in enumerate(cats)}
     slugs = [a["slug"] for a in built_areas]
@@ -845,7 +843,10 @@ def main():
     def flags(r):
         talk = is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]
         return ((1 if r["_pick"] else 0) | (2 if is_busy(r) else 0) | (4 if talk else 0) | (8 if is_premium(r) else 0)
-                | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0) | (64 if r.get("_taste") else 0))
+                | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0) | (64 if r.get("_taste") else 0)
+                | sum(bit for tag, bit in (("young", 128), ("20", 256), ("30", 512), ("40", 1024), ("50", 2048))
+                      if tag in age_tags(r).split())
+                | {"f": 4096, "m": 8192, "mix": 16384}.get(sex_tag(r), 0))
 
     def pos(r):
         ll = latlng(r)
