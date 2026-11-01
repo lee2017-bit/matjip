@@ -38,6 +38,39 @@ TAGLINE = "별점 말고, 실제로 많이 팔리는 집"
 KST = timezone(timedelta(hours=9))
 # 식당이 아닌 등록: 업종 미상 묶음(○○(구)_NICE), 단체급식·케이터링 업체
 NOT_RESTAURANT = re.compile(r"_NICE|\(구\)_|케이터링|급식|위탁")
+# 데이터 이상치 신호 (검토용). 이름이 식당 같지 않으면서 다른 신호가 하나 더 있으면 싣지 않는다.
+NONFOOD_NAME = re.compile(r"오락실|PC|피씨|노래|코인|마트|편의점|약국|병원|의원|학원|주유|세차|세탁|모텔|호텔|숙박|부동산|헬스|미용|네일|"
+                          r"안경|통신|휴대폰|상사|무역|물류|유통|건설|기획|컨설팅|에이전시|엔터|스튜디오|공사|센터$", re.I)
+ALLDAY_OK = {"찜/탕/찌개", "국수/면/만두", "분식", "김밥전문점", "호프", "기타주점", "카페", "푸드코트", "휴게소"}
+
+
+def anomaly_reasons(r: dict) -> list:
+    """결제 데이터가 보통 식당과 다르게 보이는 이유들 (판정이 아니라 검토용 신호)."""
+    out = []
+    sc = score_of(r)
+    s_, e_ = r.get("srtTime") or "", r.get("endTime") or ""
+    if len(s_) == 4 and len(e_) == 4 and s_.isdigit() and e_.isdigit():
+        sh, eh = int(s_[:2]) + int(s_[2:]) / 60, int(e_[:2]) + int(e_[2:]) / 60
+        if eh <= sh:
+            eh += 24
+        if sc >= 85 and eh - sh >= 20 and r.get("merTpbuzNm") not in ALLDAY_OK:
+            out.append("하루 20시간 이상 결제가 있음")
+    raw = r.get("merNm") or ""
+    if NONFOOD_NAME.search(clean_name(raw)):
+        out.append("이름이 식당 같지 않음")
+    if sc >= 90 and re.search(CORP, raw) and "/" not in raw and not re.search(r"\(([^)]{2,})\)\s*$", raw):
+        out.append("법인 이름만 있음")
+    k = KCHECK.get(mer_id(r.get("merUrl")))
+    if k and "none" not in k and not (k.get("g") in ("FD6", "CE7") or (k.get("c") or "").startswith("음식점")):
+        out.append(f"카카오맵에 음식점이 아닌 곳으로 나옴({k.get('c')})")
+    return out
+
+
+def anomaly_exclude(reasons: list) -> bool:
+    """확실한 경우만 뺀다: 이름부터 식당이 아니고 신호가 하나 더 있거나, 신호가 세 개 이상."""
+    return ("이름이 식당 같지 않음" in reasons and len(reasons) >= 2) or len(reasons) >= 3
+
+
 LOW_CUT = 50  # 전국 같은 업종 매출 하위 절반(상위 50% 밖)은 싣지 않는다. 주인장 픽·고급 추정은 예외
 ROTATE = 4  # --rotate: 매주 동네의 1/4만 새로 받는다 (한 번에 많이 부르지 않기)
 
@@ -678,6 +711,7 @@ def main():
         (OUT / "assets" / "og.png").write_bytes((SRC / "og.png").read_bytes())
 
     places = {}  # merUrl → item (every place we know: area pages + picks lookups)
+    review = []  # (가게, 이상치 이유, 뺐는지) — 공개하지 않는 검토 목록 (REVIEW_OUT 이 있을 때만 파일로)
 
     def prep(r):
         url = r.get("merUrl") or ""
@@ -693,6 +727,11 @@ def main():
             return None
         if NOT_RESTAURANT.search(r.get("merNm") or "") or url in tags["exclude"] or (nm & tags["exclude"]):
             return None
+        reasons = anomaly_reasons(r)
+        if reasons:
+            review.append((r, reasons, anomaly_exclude(reasons) and url not in pick_name))
+            if review[-1][2]:
+                return None
         k = KCHECK.get(mer_id(url))
         if k and "none" not in k:
             food = k.get("g") in ("FD6", "CE7") or (k.get("c") or "").startswith("음식점")
@@ -1013,6 +1052,22 @@ def main():
         (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n")
     else:
         (OUT / "robots.txt").write_text("User-agent: *\nAllow: /\n")
+    review_out = os.environ.get("REVIEW_OUT")
+    if review_out:  # 사이트(site/)·저장소에는 넣지 않는다. 판정이 아니라 사람이 보고 판단할 목록
+        seen, lines = set(), []
+        rows = sorted(review, key=lambda x: (not x[2], -len(x[1]), float(x[0].get("allSaleRnk") or 99)))
+        for r, reasons, dropped in rows:
+            if r["merUrl"] in seen or (len(reasons) < 2 and not any(x.startswith(("카카오", "이름")) for x in reasons)):
+                continue
+            seen.add(r["merUrl"])
+            lines.append(f"| {'뺌' if dropped else '검토'} | {clean_name(r.get('merNm'))} | {r.get('merTpbuzNm')} | {score_of(r)} | "
+                         f"{short_addr(r.get('merAddr'))} | {' · '.join(reasons)} | [eat.pl]({r.get('merUrl')}) |")
+        pathlib.Path(review_out).write_text(
+            "# 데이터 이상치 검토 목록 (비공개)\n\n결제 데이터가 보통 식당과 다르게 보이는 곳입니다. 부정 거래 판정이 아니라, "
+            "식당 목록에 넣을지 사람이 보고 정하기 위한 목록입니다.\n'뺌'은 사이트에서 자동으로 뺀 곳, '검토'는 그대로 둔 곳입니다. "
+            "빼고 싶은 곳은 data/tags.json 의 exclude 에 이름을 넣으면 됩니다.\n\n"
+            "| 처리 | 가게 | 업종(eat.pl) | 점수 | 주소 | 이유 | 링크 |\n|---|---|---|---|---|---|---|\n" + "\n".join(lines) + "\n")
+        print(f"review list: {len(lines)} rows ({sum(1 for x in review if x[2])} dropped) → {review_out}")
     print(f"built {len(built_areas)} area pages, {len(cat_links)} category pages, {len(prows)} picks, {len(places)} places into {OUT}")
 
 
