@@ -1,11 +1,26 @@
-# 매출맛집 — 회사 근처 점심·회식 맛집을 카드 매출 순위로
+# 매출맛집 — 맛집 매출점수 검색, 점심·회식 맛집 순위
 
-별점 대신 BC카드 최근 1개월 결제 데이터(eat.pl 잇플)의 매출 순위로 동네별 맛집을 보여 주는 정적 사이트입니다.
+별점 대신 BC카드 최근 1개월 결제 데이터(eat.pl 잇플)의 매출 순위로 가게마다 0~100점 **매출점수**를 매기고,
+가게 검색·종류별 순위·동네별 순위를 보여 주는 정적 사이트입니다. <https://lee2017-bit.github.io/matjip/>
 
-- `areas.json` — 지역 목록과 검색 주소 키워드
-- `build.py` — 지역별 순위를 받아 `site/`에 HTML을 만든다 (Python 표준 라이브러리만 사용)
+- `areas.json` — 동네 목록과 검색 주소 키워드
+- `build.py` — 동네별 순위를 받아 `site/`에 HTML과 검색 색인(`assets/places.json`)을 만든다 (Python 표준 라이브러리만 사용)
+- `data/cache/` — 동네별 eat.pl 응답 캐시 (매주 갱신)
+- `data/picks.json` — "주인장 픽": 사이트 주인이 카카오맵에 모아 온 맛집 중 eat.pl에 있는 곳 (`tools/picks.py`로 생성)
+- `worker/lookup.js` — 목록에 없는 가게를 실시간 조회하는 Cloudflare Worker (선택, 설정은 [docs/realtime-setup.md](docs/realtime-setup.md))
 - `.github/workflows/pages.yml` — GitHub Pages 배포, 매주 월요일 데이터 갱신
 
-로컬 실행: `python3 build.py` → `site/index.html`
+로컬 실행: `python3 build.py` → `site/index.html` (검색은 `python3 -m http.server -d site` 로 열어야 동작)
+
+## 매출점수
+
+eat.pl의 백분위(같은 업종 안 매출 순위, 낮을수록 상위)를 `전국 75% + 구 안 25%`로 섞어 0~100점으로 바꾼다.
+변환표는 `build.py`의 `SCORE_ANCHORS` (app.js에도 같은 값). 맛 평가가 아니라 판매량 기준이다.
+
+## 공모전 집계 관련
+
+- 맛집 링크는 받은 merUrl 그대로 `target="_blank" rel="noopener"` 로 연다 (`noreferrer` 금지).
+- referrer 정책 `strict-origin-when-cross-origin` 유지. 추적 파라미터·단축 URL·중간 페이지 없음.
+- 서버(빌드·Worker)는 eat.pl 검색 API만 부르고 merUrl은 호출하지 않는다.
 
 데이터: eat.pl 잇플 · BC카드 결제 데이터 기반 ([k-skill 잇플 스킬](https://github.com/NomaDamas/k-skill/tree/main/bccard-eatpl-search) 경유). 이 사이트는 BC카드나 eat.pl의 공식 서비스가 아닙니다.

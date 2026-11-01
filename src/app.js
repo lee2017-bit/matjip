@@ -1,25 +1,75 @@
 (function () {
-  // filters on area pages
+  var body = document.body;
+  var ROOT = body.getAttribute('data-root') || '';
+  var API = body.getAttribute('data-api') || '';
+
+  // ---------------------------------------------------------------- score (same as build.py)
+  var SCORE_ANCHORS = [[0.01, 99], [0.1, 95], [0.5, 90], [1, 86], [3, 79], [5, 75], [10, 68], [20, 58], [40, 45], [70, 30], [100, 15]];
+  function curve(p) {
+    p = parseFloat(p);
+    if (isNaN(p)) return null;
+    p = Math.min(Math.max(p, 0.01), 100);
+    var x = Math.log(p) / Math.LN10;
+    for (var i = 0; i < SCORE_ANCHORS.length - 1; i++) {
+      var a = SCORE_ANCHORS[i], b = SCORE_ANCHORS[i + 1];
+      if (p <= b[0]) {
+        var la = Math.log(a[0]) / Math.LN10, lb = Math.log(b[0]) / Math.LN10;
+        return a[1] + (b[1] - a[1]) * (x - la) / (lb - la);
+      }
+    }
+    return 15;
+  }
+  function scoreOf(all, ccg) {
+    var a = curve(all), c = curve(ccg);
+    if (a === null) return 0;
+    return Math.round(0.75 * a + 0.25 * (c === null ? a : c));
+  }
+  function grade(s) { return s >= 90 ? '전국구' : s >= 80 ? '찐맛집' : s >= 70 ? '동네 강자' : s >= 60 ? '꾸준한 집' : '숨은 집'; }
+  function pct(v) { var f = parseFloat(v); return isNaN(f) ? '-' : (f < 1 ? f.toFixed(2) : f.toFixed(1)); }
+
+  // ---------------------------------------------------------------- list filters
   var list = document.getElementById('list');
-  var buttons = document.querySelectorAll('.filters button');
-  buttons.forEach(function (b) {
-    b.addEventListener('click', function () {
-      buttons.forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      var f = b.getAttribute('data-f');
-      list.querySelectorAll('.card').forEach(function (c) {
-        var flags = (c.getAttribute('data-flags') || '').split(' ');
-        c.hidden = !!f && flags.indexOf(f) === -1;
+  var navs = document.querySelectorAll('nav.filters[data-key]');
+  function applyFilters() {
+    if (!list) return;
+    var want = {};
+    navs.forEach(function (n) {
+      var on = n.querySelector('button.on');
+      want[n.getAttribute('data-key')] = on ? on.getAttribute('data-v') : '';
+    });
+    var shown = 0;
+    list.querySelectorAll('.card').forEach(function (c) {
+      var ok = true;
+      for (var k in want) {
+        if (!want[k]) continue;
+        var vals = k === 'c' ? [c.getAttribute('data-c') || ''] : (c.getAttribute('data-' + k) || '').split(' ');
+        if (vals.indexOf(want[k]) === -1) { ok = false; break; }
+      }
+      c.hidden = !ok;
+      if (ok) { shown++; var r = c.querySelector('.rank'); if (r) r.textContent = shown; }
+    });
+    var count = document.getElementById('count');
+    if (count) count.textContent = shown ? shown + '곳' : '조건에 맞는 곳이 없어요. 다른 버튼을 눌러 보세요.';
+  }
+  navs.forEach(function (n) {
+    n.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        n.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        applyFilters();
       });
     });
   });
+  applyFilters();
 
-  // "오늘 점심 뭐 먹지?" picker: 3 random places among the top lunch spots
+  // ---------------------------------------------------------------- "오늘 점심 뭐 먹지?" picker
   var pick = document.getElementById('pick');
   if (pick && list) {
     pick.addEventListener('click', function () {
       var cards = Array.prototype.slice.call(list.querySelectorAll('.card'));
-      var pool = cards.filter(function (c) { return (c.getAttribute('data-flags') || '').indexOf('lunch') !== -1; }).slice(0, 40);
+      var pool = cards.filter(function (c) {
+        return (c.getAttribute('data-f') || '').split(' ').indexOf('lunch') !== -1 && (c.getAttribute('data-g') || '').indexOf('meal') !== -1;
+      }).slice(0, 40);
       if (pool.length < 3) pool = cards.slice(0, 40);
       for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
       var out = document.getElementById('picked');
@@ -32,28 +82,129 @@
         link.textContent = c.querySelector('h3').textContent + ' (' + c.querySelector('.cat').textContent + ')';
         var why = document.createElement('span');
         why.className = 'why';
-        why.textContent = c.querySelector('.nums').textContent;
+        why.textContent = '매출점수 ' + c.querySelector('.score b').textContent + '점 · ' + c.querySelector('.nums').textContent;
         li.appendChild(link); li.appendChild(why); out.appendChild(li);
       });
       pick.textContent = '다시 뽑기';
     });
   }
 
-  // area search on the home page
+  // ---------------------------------------------------------------- home: search places + areas
   var q = document.getElementById('q');
-  if (q) {
-    q.addEventListener('input', function () {
-      var v = q.value.trim();
-      document.querySelectorAll('.tile').forEach(function (t) {
-        t.hidden = !!v && (t.getAttribute('data-name') || '').indexOf(v) === -1;
+  var results = document.getElementById('results');
+  var data = null, loading = null;
+  function norm(s) { return String(s || '').toLowerCase().replace(/\(주\)|㈜|주식회사/g, '').replace(/[^0-9a-z가-힣]/g, ''); }
+  function load() {
+    if (data || loading) return loading;
+    loading = fetch(ROOT + 'assets/places.json').then(function (r) { return r.json(); }).then(function (d) {
+      d.places.forEach(function (p) {
+        p.n = norm(p[0]);
+        p.hay = p.n + norm(p[3]) + norm(p[2]) + norm(d.groups[p[1]] || '') + norm(d.areas[p[8]] || '');
       });
-      document.querySelectorAll('.city').forEach(function (s) {
-        s.hidden = !s.querySelector('.tile:not([hidden])');
-      });
+      data = d;
+      return d;
     });
+    return loading;
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function placeCard(p) {
+    // p: {name, cat, addr, score, all, ccg, url, area, pick, note}
+    var li = el('li', 'card');
+    var head = el('div', 'card-head');
+    head.appendChild(el('h3', '', p.name));
+    head.appendChild(el('span', 'cat', p.cat || '기타'));
+    var s = el('span', 'score'); s.appendChild(el('b', '', String(p.score))); s.appendChild(document.createTextNode('점')); s.appendChild(el('small', '', grade(p.score)));
+    head.appendChild(s);
+    li.appendChild(head);
+    if (p.note) li.appendChild(el('p', 'meta where', p.note));
+    var nums = el('p', 'nums'); nums.appendChild(el('strong', '', '전국 같은 업종 매출 상위 ' + pct(p.all) + '%')); nums.appendChild(document.createTextNode(' · 구 안에서 상위 ' + pct(p.ccg) + '%'));
+    li.appendChild(nums);
+    var m = el('p', 'meta', p.addr || '');
+    if (p.area && data && data.areas[p.area]) {
+      m.appendChild(document.createTextNode(' · '));
+      var al = el('a', '', data.areas[p.area] + ' 순위 보기'); al.href = ROOT + 'area/' + p.area + '.html'; m.appendChild(al);
+    }
+    li.appendChild(m);
+    if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
+    var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
+    li.appendChild(go);
+    return li;
+  }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : 'https://web.paybooc.ai/mer/web/profile/') + p[7], area: p[8], pick: p[9] }; }
+
+  function liveButton(term, box) {
+    if (!API) {
+      box.appendChild(el('p', 'hint', '아직 모아 둔 데이터에 없는 가게예요. 가게 이름과 동네를 알려 주시면 다음 업데이트 때 추가할게요.'));
+      return;
+    }
+    var b = el('button', 'live', '"' + term + '" 실시간으로 찾아보기');
+    b.type = 'button';
+    b.onclick = function () {
+      b.disabled = true; b.textContent = '찾는 중… (최대 10초)';
+      fetch(API + '/?q=' + encodeURIComponent(term)).then(function (r) { return r.json(); }).then(function (d) {
+        var ul = el('ol', 'list');
+        var found = 0;
+        (d.results || []).forEach(function (x) {
+          if (!x.item || !x.item.merUrl) return;
+          var it = x.item; found++;
+          ul.appendChild(placeCard({ name: x.place && x.place.name || it.merNm, cat: it.merTpbuzNm, addr: x.place && x.place.addr || it.merAddr,
+            score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과' }));
+        });
+        b.remove();
+        if (found) box.appendChild(ul);
+        else box.appendChild(el('p', 'hint', d.message || 'BC카드 결제 데이터에서 이 가게를 찾지 못했어요. 이름을 조금 다르게(지점명 포함) 검색해 보세요.'));
+      }).catch(function () { b.disabled = false; b.textContent = '다시 시도'; });
+    };
+    box.appendChild(b);
   }
 
-  // in-app browser notice (links opened inside chat apps may not keep the visit path)
+  var timer = null;
+  function search() {
+    var v = q.value.trim();
+    // area tiles
+    document.querySelectorAll('.tile').forEach(function (t) {
+      t.hidden = !!v && (t.getAttribute('data-name') || '').indexOf(v) === -1;
+    });
+    document.querySelectorAll('.city').forEach(function (s) { s.hidden = !s.querySelector('.tile:not([hidden])'); });
+    var areasBox = document.getElementById('areas');
+    if (areasBox) areasBox.hidden = !areasBox.querySelector('.city:not([hidden])');
+    if (!results) return;
+    results.innerHTML = '';
+    if (v.length < 2) return;
+    load().then(function (d) {
+      if (q.value.trim() !== v) return;
+      var toks = v.split(/\s+/).map(norm).filter(Boolean);
+      var whole = norm(v);
+      var hits = d.places.filter(function (p) {
+        return toks.every(function (t) { return p.hay.indexOf(t) !== -1; });
+      });
+      hits.sort(function (a, b) {
+        var ra = a.n === whole ? 0 : a.n.indexOf(whole) === 0 ? 1 : a.n.indexOf(whole) !== -1 ? 2 : 3;
+        var rb = b.n === whole ? 0 : b.n.indexOf(whole) === 0 ? 1 : b.n.indexOf(whole) !== -1 ? 2 : 3;
+        return ra - rb || b[4] - a[4];
+      });
+      results.innerHTML = '';
+      var nameHit = hits.length && hits[0].n.indexOf(whole) !== -1;
+      if (hits.length) {
+        results.appendChild(el('p', 'count', hits.length > 30 ? '검색 결과 ' + hits.length + '곳 중 매출점수 상위 30곳' : '검색 결과 ' + hits.length + '곳'));
+        var ul = el('ol', 'list');
+        hits.slice(0, 30).forEach(function (p) { ul.appendChild(placeCard(fromIndex(p))); });
+        results.appendChild(ul);
+      } else {
+        results.appendChild(el('p', 'count', '모아 둔 ' + d.places.length.toLocaleString() + '곳 중에는 없어요.'));
+      }
+      if (!nameHit) liveButton(v, results);
+    });
+  }
+  if (q) {
+    q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(search, 180); });
+    q.addEventListener('focus', load, { once: true });
+    var m = /[?&]q=([^&]+)/.exec(location.search);
+    if (m) { try { q.value = decodeURIComponent(m[1].replace(/\+/g, ' ')); search(); } catch (e) { /* ignore */ } }
+  }
+
+  // ---------------------------------------------------------------- in-app browser notice
+  // links opened inside chat apps may not keep the visit path
   var ua = navigator.userAgent || '';
   var box = document.getElementById('inapp');
   if (!box) return;
