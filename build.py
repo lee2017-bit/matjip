@@ -38,7 +38,7 @@ MAX_AGE = timedelta(days=6)
 
 # category groups (eat.pl 업종명 → 사이트 분류). Order = order of the filter chips.
 GROUPS = [
-    ("korean", "한식", ("찜/탕/찌개", "백반/한정식", "기타한식", "국수/면/만두", "전/부침개", "도시락/죽", "뷔페", "반찬가게")),
+    ("korean", "한식", ("찜/탕/찌개", "백반/한정식", "기타한식", "국수/면/만두", "전/부침개", "도시락/죽", "뷔페", "반찬가게", "비건/채식/사찰")),
     ("meat", "고기", ("고기구이", "곱창전골/구이", "족발/보쌈", "양꼬치")),
     ("seafood", "해산물", ("횟집", "해산물구이/찜")),
     ("japanese", "일식", ("기타일식", "스시/초밥", "일식돈가스", "일식라멘")),
@@ -49,9 +49,21 @@ GROUPS = [
     ("cafe", "카페·디저트", ("카페", "기타베이커리", "빵/도넛", "아이스크림/요거트/빙수", "떡/한과", "체험카페")),
 ]
 GROUP_OF = {cat: key for key, _, cats in GROUPS for cat in cats}
+# 업종 아이콘 (사진 대신). 세부 업종 → 없으면 분류 아이콘. app.js 의 ICONS 와 같은 값.
+CAT_ICON = {"찜/탕/찌개": "🍲", "국수/면/만두": "🍜", "일식라멘": "🍜", "마라탕": "🌶️", "치킨": "🍗", "피자": "🍕", "버거": "🍔",
+            "분식": "🍢", "떡볶이전문점": "🍢", "김밥전문점": "🍙", "도시락/죽": "🍱", "샌드위치/토스트": "🥪", "브런치카페/샐러드": "🥗",
+            "족발/보쌈": "🍖", "곱창전골/구이": "🍖", "양꼬치": "🍢", "스시/초밥": "🍣", "일식돈가스": "🍛", "이탈리아음식": "🍝",
+            "멕시칸": "🌮", "아시안": "🍜", "프랑스음식": "🍷", "바(bar)": "🍸", "이자카야": "🏮", "호프": "🍺", "기타주점": "🍶",
+            "빵/도넛": "🥐", "기타베이커리": "🥐", "아이스크림/요거트/빙수": "🍨", "떡/한과": "🍡", "뷔페": "🍽️", "해산물구이/찜": "🦀", "비건/채식/사찰": "🥗"}
+GROUP_ICON = {"korean": "🍚", "meat": "🥩", "seafood": "🐟", "japanese": "🍣", "chinese": "🥟", "western": "🍝",
+              "quick": "🍔", "drink": "🍺", "cafe": "☕", "etc": "🍽️"}
+
+
+def icon_of(cat) -> str:
+    return CAT_ICON.get(cat) or GROUP_ICON.get(GROUP_OF.get(cat, "etc"), "🍽️")
 GROUP_NAME = {key: name for key, name, _ in GROUPS}
 MER_PREFIX = "https://web.paybooc.ai/mer/web/profile/"  # shortened in places.json, restored by app.js
-SKIP_CATS = {"영화관", "기타식품소매업", "주류판매점", "유흥주점", "매점"}  # not restaurants
+SKIP_CATS = {"영화관", "기타식품소매업", "주류판매점", "유흥주점", "매점", "만화방", "스터디카페", "음식/식자재배달", "건어물/젓갈"}  # not restaurants
 
 # 매출점수: percentile (lower = sells more) → 0..100, linear in log10(p) between anchors.
 # Keep in sync with SCORE_ANCHORS in src/app.js and worker/lookup.js.
@@ -384,7 +396,7 @@ def card(r: dict, rank: int) -> str:
                      + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
     note = "".join(notes)
     return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-c="{esc(city_of(r.get('merAddr')))}">
-  <div class="card-head"><span class="rank">{rank}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
+  <div class="card-head"><span class="rank">{rank}</span><span class="ico" aria-hidden="true">{icon_of(cat)}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
   <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
   <p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
   {note}<p class="meta">{esc(short_addr(r.get('merAddr')))}</p>

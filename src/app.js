@@ -207,6 +207,15 @@
     });
     return loading;
   }
+  // 업종 아이콘 (build.py 의 CAT_ICON / GROUP_ICON 과 같은 값)
+  var ICONS = { '찜/탕/찌개': '🍲', '국수/면/만두': '🍜', '일식라멘': '🍜', '마라탕': '🌶️', '치킨': '🍗', '피자': '🍕', '버거': '🍔',
+    '분식': '🍢', '떡볶이전문점': '🍢', '김밥전문점': '🍙', '도시락/죽': '🍱', '샌드위치/토스트': '🥪', '브런치카페/샐러드': '🥗',
+    '족발/보쌈': '🍖', '곱창전골/구이': '🍖', '양꼬치': '🍢', '스시/초밥': '🍣', '일식돈가스': '🍛', '이탈리아음식': '🍝',
+    '멕시칸': '🌮', '아시안': '🍜', '프랑스음식': '🍷', '바(bar)': '🍸', '이자카야': '🏮', '호프': '🍺', '기타주점': '🍶',
+    '빵/도넛': '🥐', '기타베이커리': '🥐', '아이스크림/요거트/빙수': '🍨', '떡/한과': '🍡', '뷔페': '🍽️', '해산물구이/찜': '🦀',
+    '백반/한정식': '🍚', '기타한식': '🍚', '전/부침개': '🍚', '반찬가게': '🍚', '고기구이': '🥩', '횟집': '🐟', '기타일식': '🍣',
+    '기타중식': '🥟', '기타외국식': '🍝', '푸드코트': '🍔', '휴게소': '🍔', '카페': '☕', '체험카페': '☕', '비건/채식/사찰': '🥗' };
+  function iconOf(cat) { return ICONS[cat] || '🍽️'; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function placeCard(p) {
     // p: {name, cat, addr, score, all, ccg, url, area, pick, busy, note, q}
@@ -214,6 +223,7 @@
     li.id = 'p-' + String(p.url || '').split('/').pop();
     if (p.q) li.setAttribute('data-q', p.q);
     var head = el('div', 'card-head');
+    var ic = el('span', 'ico', iconOf(p.cat)); ic.setAttribute('aria-hidden', 'true'); head.appendChild(ic);
     head.appendChild(el('h3', '', p.name));
     head.appendChild(el('span', 'cat', p.cat || '기타'));
     var s = el('span', 'score'); s.appendChild(el('b', '', String(p.score))); s.appendChild(document.createTextNode('점')); s.appendChild(el('small', '', grade(p.score)));
@@ -344,7 +354,7 @@
 
   // shared helpers for map.js
   window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
-    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, data: function () { return data; } };
+    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path
