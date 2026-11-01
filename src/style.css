@@ -104,3 +104,6 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .pop strong{font-size:15px}.pop-meta{color:#555;font-size:13px;margin:2px 0 6px}.pop .go{margin-top:0;font-size:14px}
 .leaflet-container{font:inherit}
 .ico{font-size:18px;line-height:1}
+.map-listhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sortnav{padding:4px 0}
+.sortnav button{padding:6px 12px;font-size:13px}

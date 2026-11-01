@@ -34,7 +34,10 @@
     if (filter === 'pick') return !!p.pick;
     return p.g === filter;
   }
-  function color(s) { return s >= 90 ? '#c2410c' : s >= 80 ? '#ea580c' : s >= 70 ? '#fb923c' : '#a8a29e'; }
+  function color(s) { return s >= 90 ? '#c2410c' : s >= 80 ? '#ea580c' : s >= 70 ? '#fb923c' : s >= 60 ? '#fdba74' : '#a8a29e'; }
+  var sortBy = 'score';     // 내 위치를 켜면 '점수순 / 가까운 순' 전환
+  var fetched = [];         // 실시간으로 불러온 지점들 (같은 곳을 다시 부르지 않는다)
+  var autoLeft = 8;         // 한 번 방문에 자동 조회는 최대 8번
 
   var all = [];             // normalized places with coordinates
   function fromIndex(p) { var o = M.fromIndex(p); o.g = p[1]; return o; }
@@ -62,14 +65,16 @@
     inView.slice(0, 400).forEach(function (p) {
       var mk = L.circleMarker([p.lat, p.lng], {
         radius: p.score >= 90 ? 9 : p.score >= 80 ? 7 : 5, color: '#fff', weight: 1.5,
-        fillColor: p.live ? '#2563eb' : color(p.score), fillOpacity: 0.9
+        fillColor: color(p.score), fillOpacity: 0.9
       });
       mk.bindPopup(function () { return popup(p); });
       mk.addTo(layer);
     });
     // list: near me → by distance, otherwise by score
     var rows = inView.slice();
-    if (me) rows.sort(function (x, y) { return dist(me, x) - dist(me, y); });
+    if (me && sortBy === 'dist') rows.sort(function (x, y) { return dist(me, x) - dist(me, y); });
+    var sortNav = document.getElementById('map-sort');
+    if (sortNav) sortNav.hidden = !me;
     listEl.innerHTML = '';
     rows.slice(0, 30).forEach(function (p) {
       var c = M.placeCard(p);
@@ -80,14 +85,15 @@
       listEl.appendChild(c);
     });
     countEl.textContent = inView.length
-      ? '이 화면 안 ' + inView.length + '곳' + (inView.length > 30 ? (me ? ' · 가까운 30곳' : ' · 매출점수 상위 30곳') : '')
+      ? '이 화면 안 ' + inView.length + '곳' + (inView.length > 30 ? (me && sortBy === 'dist' ? ' · 가까운 30곳' : ' · 매출점수 상위 30곳') : '')
       : '이 화면에는 모아 둔 가게가 없어요.';
     if (hereBtn) hereBtn.hidden = !M.API || map.getZoom() < 14;
   }
 
   function live(lat, lng) {
     if (!M.API) { say('이 동네는 아직 데이터가 없어요.'); return; }
-    say('이 근처 가게를 찾는 중… (최대 10초)');
+    fetched.push({ lat: lat, lng: lng });
+    say('이 근처 동네 가게를 불러오는 중… (최대 10초)');
     if (hereBtn) hereBtn.disabled = true;
     fetch(M.API + '/?lat=' + lat.toFixed(5) + '&lng=' + lng.toFixed(5)).then(function (r) { return r.json(); }).then(function (d) {
       var known = {};
@@ -99,6 +105,7 @@
         known[it.merUrl] = 1; liveItems.push(fromLive(it)); added++;
       });
       say(d.area ? d.area + ' 매출 상위 가게를 불러왔어요' + (added ? ' (새로 ' + added + '곳)' : '') : (d.message || ''));
+      setTimeout(function () { if (status.textContent.indexOf('불러왔어요') !== -1) say(''); }, 5000);
       render();
     }).catch(function () { say('지금은 조회가 몰려 있어요. 잠시 뒤 다시 시도해 주세요.'); })
       .then(function () { if (hereBtn) hereBtn.disabled = false; });
@@ -113,9 +120,8 @@
       L.circle([me.lat, me.lng], { radius: Math.min(pos.coords.accuracy, 300), color: '#2563eb', weight: 1, fillOpacity: 0.08 }).addTo(meLayer);
       L.circleMarker([me.lat, me.lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 1 }).addTo(meLayer).bindPopup('내 위치');
       map.setView([me.lat, me.lng], 16);
-      var near = all.filter(function (p) { return dist(me, p) < 700; }).length;
       say('');
-      if (near < 15) live(me.lat, me.lng);   // 모아 둔 데이터가 적은 곳이면 실시간으로 채운다
+      live(me.lat, me.lng);   // 모아 둔 데이터는 동네마다 들쭉날쭉해서 내 주변은 항상 실시간으로 채운다
     }, function (err) {
       say(err.code === 1 ? '위치 권한이 꺼져 있어요. 브라우저 설정에서 이 사이트의 위치 접근을 허용해 주세요. (카톡·인스타 등 앱 안 브라우저는 막혀 있을 수 있어요)'
         : '위치를 가져오지 못했어요. 잠시 뒤 다시 시도해 주세요.');
@@ -153,7 +159,24 @@
       b.classList.add('on'); filter = b.getAttribute('data-v'); render();
     });
   });
-  map.on('moveend', render);
+  var autoTimer = null;
+  map.on('moveend', function () {
+    render();
+    // 지도를 다른 동네로 옮기면 잠시 뒤 그 동네도 자동으로 불러온다
+    clearTimeout(autoTimer);
+    if (!M.API || autoLeft <= 0 || map.getZoom() < 15 || !all.length) return;
+    autoTimer = setTimeout(function () {
+      var c = map.getCenter(), cc = { lat: c.lat, lng: c.lng };
+      if (fetched.some(function (f) { return dist(f, cc) < 800; })) return;
+      autoLeft--; live(c.lat, c.lng);
+    }, 1500);
+  });
+  document.querySelectorAll('#map-sort button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#map-sort button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on'); sortBy = b.getAttribute('data-v'); render();
+    });
+  });
 
   say('지도를 불러오는 중…');
   M.load().then(function (d) {

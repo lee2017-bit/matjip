@@ -3,7 +3,7 @@
 //   GET https://<이름>.<계정>.workers.dev/?q=가게이름        예) ?q=진주회관, ?q=을지로 진주회관
 //   → eat.pl 잇플 가맹점 이름 검색(k-skill 프록시)을 불러 이름이 맞는 가게들을 돌려준다.
 //   GET https://<이름>.<계정>.workers.dev/?lat=37.56&lng=126.97   (지도 '내 위치')
-//   → 좌표의 동 이름을 찾고(k-skill 프록시의 카카오 좌표→주소) 그 동의 eat.pl 매출 상위 가게를 돌려준다.
+//   → 좌표와 주변(약 450m) 지점의 동 이름을 찾고(k-skill 프록시의 카카오 좌표→주소) 최대 4개 동의 eat.pl 매출 상위 가게를 돌려준다.
 //   모든 가게에 WGS84 위경도(lat, lng)를 붙여 준다.
 //
 // 설정 (선택, Cloudflare 대시보드 → Worker → Settings → Variables and Secrets):
@@ -67,22 +67,35 @@ export default {
 async function near(lat, lng, cors, ctx) {
   if (lat < 33 || lat > 39 || lng < 124 || lng > 132) return json({ results: [], message: '국내 위치만 찾을 수 있어요.' }, 400, cors);
   const cache = caches.default;
-  const key = new Request('https://cache.matjip/near/' + lat.toFixed(3) + ',' + lng.toFixed(3));  // 약 100m 격자
+  const key = new Request('https://cache.matjip/near2/' + lat.toFixed(3) + ',' + lng.toFixed(3));  // 약 100m 격자
   const hit = await cache.match(key);
   if (hit) return withHeaders(hit, cors);
-  const r = await fetch(COORD2ADDR + '?x=' + lng + '&y=' + lat, { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
-  if (!r.ok) return json({ results: [], message: '위치의 동 이름을 찾지 못했어요.' }, 502, cors);
-  const doc = ((await r.json()).documents || [])[0] || {};
-  const a = doc.address || {};
-  const area = [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
-  if (!area) return json({ results: [], message: '위치의 동 이름을 찾지 못했어요.' }, 404, cors);
-  const items = await eatpl({ name: '', location: area });
-  if (items === null) return json({ results: [], message: '지금은 조회가 몰려 있어요. 잠시 뒤 다시 시도해 주세요.' }, 503, cors);
-  const body = { area, results: items.map(item => ({ item: withLatLng(item) })), message: items.length ? '' : area + '에서 가게를 찾지 못했어요.' };
+  // 가운데 + 동서남북 약 450m 지점의 동 이름을 모아 최대 4개 동을 조회한다 (화면 가장자리까지 채우기)
+  const pts = [[0, 0], [0.004, 0], [-0.004, 0], [0, 0.005], [0, -0.005]];
+  const names = await Promise.all(pts.map(([dy, dx]) => dongAt(lat + dy, lng + dx)));
+  const areas = [...new Set(names.filter(Boolean))].slice(0, 4);
+  if (!areas.length) return json({ results: [], message: '위치의 동 이름을 찾지 못했어요.' }, 404, cors);
+  const seen = new Set(), results = [];
+  for (let i = 0; i < areas.length; i++) {
+    if (i) await sleep(800);  // 프록시에 몰아서 부르지 않는다
+    const items = await eatpl({ name: '', location: areas[i] });
+    if (items === null) { if (!results.length) return json({ results: [], message: '지금은 조회가 몰려 있어요. 잠시 뒤 다시 시도해 주세요.' }, 503, cors); break; }
+    for (const it of items) if (!seen.has(it.merUrl)) { seen.add(it.merUrl); results.push({ item: withLatLng(it) }); }
+  }
+  const body = { area: areas.join(', '), areas, results, message: results.length ? '' : '이 근처에서 가게를 찾지 못했어요.' };
   ctx.waitUntil(cache.put(key, new Response(JSON.stringify(body), {
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'max-age=' + CACHE_TTL },
   })));
   return json(body, 200, cors);
+}
+
+async function dongAt(lat, lng) {
+  try {
+    const r = await fetch(COORD2ADDR + '?x=' + lng.toFixed(6) + '&y=' + lat.toFixed(6), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
+    if (!r.ok) return '';
+    const a = ((((await r.json()).documents || [])[0] || {}).address) || {};
+    return [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
+  } catch (e) { return ''; }
 }
 
 async function eatpl({ name, location }) {

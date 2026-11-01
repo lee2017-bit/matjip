@@ -651,7 +651,7 @@ def main():
 <section class="hero small map-hero">
   <p class="crumb"><a href="index.html">홈</a> › 지도</p>
   <h1>지도로 보는 <span>매출맛집</span></h1>
-  <p class="sub">지도를 움직이면 그 화면 안에서 매출점수가 높은 집을 보여 드려요. <b>내 위치</b>를 누르면 가까운 순으로 정리하고, 모아 둔 데이터가 없는 동네도 실시간으로 찾아봐요.</p>
+  <p class="sub">지도를 움직이면 그 화면 안에서 매출점수가 높은 집을 보여 드려요. <b>내 위치</b>를 누르면 주변 동네 매출 상위 가게를 실시간으로 불러오고, 점수순·가까운 순으로 볼 수 있어요.</p>
 </section>
 <div class="map-tools">
   <button type="button" id="locate" class="locate">◎ 내 위치</button>
@@ -668,7 +668,8 @@ def main():
   <button type="button" data-v="premium">고급</button><button type="button" data-v="pick">주인장 픽</button>
 </nav>
 <div id="map" class="map" role="region" aria-label="맛집 지도"></div>
-<p class="count" id="map-count"></p>
+<div class="map-listhead"><p class="count" id="map-count"></p>
+<nav class="filters sortnav" id="map-sort" aria-label="정렬" hidden><button type="button" data-v="score" class="on">점수순</button><button type="button" data-v="dist">가까운 순</button></nav></div>
 <ol class="list" id="map-list"></ol>
 <p class="small-note sub">지도 © OpenStreetMap 기여자. 가게 위치는 결제 데이터의 좌표라 실제 입구와 수십 m 다를 수 있어요.</p>
 """
