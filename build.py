@@ -728,6 +728,10 @@ def main():
     rotate = "--rotate" in sys.argv
     areas = json.loads((ROOT / "areas.json").read_text())
     picks = json.loads(PICKS.read_text()) if PICKS.exists() else {"picks": [], "items": []}
+    # 주인장 픽 가게의 eat.pl 원본은 공개 저장소가 아니라 data/cache/(GitHub Actions 캐시)에 둔다 (약관: 원본 축적·제3자 제공 금지)
+    pitems = CACHE / "picks_items.json"
+    if pitems.exists():
+        picks["items"] = json.loads(pitems.read_text()).get("items", [])
     pick_name = {p["merUrl"]: p["name"] for p in picks.get("picks", [])}
     tag_file = ROOT / "data" / "tags.json"
     tdata = json.loads(tag_file.read_text()) if tag_file.exists() else {}

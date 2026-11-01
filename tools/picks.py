@@ -138,9 +138,11 @@ def main():
         else:
             missed += 1
     uniq = {p["merUrl"]: p for p in picks}
-    out = {"fetched_at": datetime.now(KST).isoformat(timespec="seconds"),
-           "source": "eat.pl 잇플 · BC카드 결제 데이터 기반", "picks": list(uniq.values()), "items": list(items.values())}
+    now = datetime.now(KST).isoformat(timespec="seconds")
+    out = {"fetched_at": now, "source": "eat.pl 잇플 · BC카드 결제 데이터 기반", "picks": list(uniq.values())}
     pathlib.Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=0))
+    # eat.pl 원본은 공개 저장소에 넣지 않는다: data/cache/ (git 제외, GitHub Actions 캐시로만 보관)
+    (ROOT / "data" / "cache" / "picks_items.json").write_text(json.dumps({"fetched_at": now, "items": list(items.values())}, ensure_ascii=False))
     print(f"matched {len(uniq)} picks, {missed} not found, {len(items)} stores saved → {args.out}", file=sys.stderr)
 
 

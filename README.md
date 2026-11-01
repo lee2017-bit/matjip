@@ -5,8 +5,8 @@
 
 - `areas.json` — 동네 목록과 검색 주소 키워드 (도로명 또는 '구 동' 단위)
 - `build.py` — 동네별 순위를 받아 `site/`에 HTML과 검색 색인(`assets/places.json`)을 만든다 (Python 표준 라이브러리만 사용)
-- `data/cache/` — 동네별 eat.pl 응답 캐시 (157개 동네. 매주 월요일 1/4씩 돌아가며 갱신 `--rotate`, 새 동네만 처음에 받음)
-- `data/picks.json` — "주인장 픽": 사이트 주인이 카카오맵에 모아 온 맛집 중 eat.pl에 있는 곳 (`tools/picks.py`로 생성)
+- `data/cache/` — 동네별 eat.pl 응답 캐시 (157개 동네. 매주 월요일 1/4씩 돌아가며 갱신 `--rotate`, 새 동네만 처음에 받음). **저장소에는 넣지 않는다** (공모전 약관: 원본 데이터 축적·제3자 제공 금지) — GitHub Actions 캐시(비공개)로만 이어 쓰고, 없으면 빌드가 새로 받는다. 7일 안 쓰면 지워지므로 목요일에도 한 번 빌드한다
+- `data/picks.json` — "주인장 픽": 사이트 주인이 카카오맵에 모아 온 맛집 중 eat.pl에 있는 곳의 이름과 merUrl (`tools/picks.py`로 생성, 그 가게들의 eat.pl 원본은 `data/cache/picks_items.json`)
 - `worker/lookup.js` — 목록에 없는 가게를 이름으로, 또는 지도 '내 위치' 주변 동네를 실시간 조회하는 Cloudflare Worker (키 불필요, main의 `worker/`가 바뀌면 Cloudflare가 자동 배포, [docs/realtime-setup.md](docs/realtime-setup.md))
 - `worker/chat.js` + `src/ask.js` — '물어보기'(AI 채팅). Cloudflare Workers AI 무료 할당량, 키 불필요. AI는 질문 분석과 후보 중 고르기만 하고 가게·링크는 데이터 그대로 ([docs/realtime-setup.md](docs/realtime-setup.md#물어보기-ai-채팅-cloudflare-workers-ai))
 - `src/map.js` — 지도 페이지(Leaflet + OpenStreetMap). eat.pl 좌표(TM128)는 빌드 때 WGS84로 변환

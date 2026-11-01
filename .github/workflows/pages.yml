@@ -4,6 +4,7 @@ on:
     branches: [main]
   schedule:
     - cron: "17 18 * * 0"   # every Monday 03:17 KST: refresh the rankings
+    - cron: "17 18 * * 3"   # every Thursday: rebuild only (keeps the private data cache from expiring after 7 days)
   workflow_dispatch:
 permissions:
   contents: write
@@ -20,24 +21,38 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # eat.pl 원본 응답(data/cache)은 공개 저장소에 두지 않고 GitHub Actions 캐시(비공개)로만 이어 쓴다.
+      # 캐시가 없으면 build.py 가 동네별로 새로 받는다.
+      - name: Restore data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: eatpl-${{ github.run_id }}
+          restore-keys: eatpl-
       - name: Build (weekly schedule refreshes a quarter of the areas, cached data otherwise)
         env:
           BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           LOOKUP_API: ${{ vars.LOOKUP_API || 'https://matjip-lookup.jaewon-lee2017.workers.dev' }}
-        run: python3 build.py ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--rotate' || '' }}
+        run: python3 build.py ${{ ((github.event_name == 'schedule' && github.event.schedule == '17 18 * * 0') || github.event_name == 'workflow_dispatch') && '--rotate' || '' }}
       - name: Cross-check new places on Kakao Map (weekly, up to 200) and rebuild
-        if: github.event_name != 'push'
+        if: (github.event_name == 'schedule' && github.event.schedule == '17 18 * * 0') || github.event_name == 'workflow_dispatch'
         env:
           BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           LOOKUP_API: ${{ vars.LOOKUP_API || 'https://matjip-lookup.jaewon-lee2017.workers.dev' }}
         run: python3 tools/kakao_check.py --limit 200 && python3 build.py
-      - name: Save refreshed data
+      - name: Save data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/cache
+          key: eatpl-${{ github.run_id }}
+      - name: Save Kakao cross-check results
         if: github.event_name != 'push'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add data/cache data/kakao_check.json
-          git diff --cached --quiet || git commit -m "Refresh rankings" && git push || true
+          git add data/kakao_check.json
+          git diff --cached --quiet || git commit -m "Kakao cross-check update" && git push || true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
