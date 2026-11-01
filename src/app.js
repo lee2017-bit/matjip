@@ -4,7 +4,7 @@
   var API = body.getAttribute('data-api') || '';
 
   // ---------------------------------------------------------------- score (same as build.py)
-  var SCORE_ANCHORS = [[0.01, 99], [0.1, 95], [0.5, 90], [1, 86], [3, 79], [5, 75], [10, 68], [20, 58], [40, 45], [70, 30], [100, 15]];
+  var SCORE_ANCHORS = [[0.01, 99], [0.1, 96], [0.5, 92], [1, 89], [3, 84], [5, 81], [10, 77], [20, 71], [40, 61], [70, 48], [100, 35]];
   function curve(p) {
     p = parseFloat(p);
     if (isNaN(p)) return null;
@@ -17,7 +17,7 @@
         return a[1] + (b[1] - a[1]) * (x - la) / (lb - la);
       }
     }
-    return 15;
+    return 35;
   }
   function scoreOf(all, ccg) {
     var a = curve(all), c = curve(ccg);
@@ -32,7 +32,7 @@
   var BUSY_NOTE = '아주 붐비는 집 · 홀은 대화하기엔 시끄러울 수 있어요';
   var BUSY_ROOM_GROUP = '단체석·룸이 있을 가능성이 높으니 예약 때 물어보세요';
   var BUSY_ROOM = '조용한 자리라면 룸이 있는지 확인해 보세요';
-  var PREMIUM_KW = /오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|코스|한우|와규|wagyu|스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|셰프|chef|chez|레스토랑|restaurant|스키야키|한정식/i;
+  var PREMIUM_KW = /오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|(^|[^타])코스|한우|와규|wagyu|스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|셰프|chef|chez|레스토랑|restaurant|스키야키|한정식/i;
   var PREMIUM_NOT = /정육|해장|곱창|국밥|순대|분식|뷔페|식당$/;
   var CHAIN = /(?:^|[^본])점(\)|$)|지점|신세계|현대백화점|롯데|몰|타임스퀘어|스타필드|아이파크|코엑스/;
   var PREMIUM_BAD = ['카페', '분식', '김밥전문점', '치킨', '버거', '피자', '호프', '기타주점', '빵/도넛', '기타베이커리', '샌드위치/토스트', '도시락/죽', '브런치카페/샐러드', '푸드코트', '휴게소', '뷔페'];
@@ -42,7 +42,7 @@
     if (PREMIUM_BAD.indexOf(cat) !== -1 || CHAIN.test(flat) || PREMIUM_NOT.test(flat) || isNaN(p) || p > 70) return false;
     if (!s || !e || s < '1100' || e < s || e > '2330') return false;
     var sushi = (cat === '스시/초밥' || cat === '기타일식') && /^스시\s?\S{1,4}$/.test(name);
-    return PREMIUM_KW.test(it.merNm || '') || cat === '프랑스음식' || sushi;
+    return PREMIUM_KW.test(name) || cat === '프랑스음식' || sushi;
   }
   function cleanName(n) {
     var parts = String(n || '').split('/').map(function (x) {

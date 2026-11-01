@@ -55,8 +55,10 @@ SKIP_CATS = {"영화관", "기타식품소매업", "주류판매점", "유흥주
 
 # 매출점수: percentile (lower = sells more) → 0..100, linear in log10(p) between anchors.
 # Keep in sync with SCORE_ANCHORS in src/app.js and worker/lookup.js.
-SCORE_ANCHORS = [(0.01, 99), (0.1, 95), (0.5, 90), (1, 86), (3, 79), (5, 75), (10, 68),
-                 (20, 58), (40, 45), (70, 30), (100, 15)]
+# 주인장 픽 640곳(중간값 상위 17.6%)이 같은 건물의 다른 가게들(중간값 30.6%)보다 확실히 높게 나오도록 맞춘 곡선:
+# 픽 중간값 71점, 같은 건물 이웃 64점, 동네 순위(도로별 매출 상위) 78점.
+SCORE_ANCHORS = [(0.01, 99), (0.1, 96), (0.5, 92), (1, 89), (3, 84), (5, 81), (10, 77),
+                 (20, 71), (40, 61), (70, 48), (100, 35)]
 
 
 # ------------------------------------------------------------------ fetch
@@ -243,7 +245,7 @@ def is_talk(r: dict) -> bool:
 
 
 # 고급·가격대 높음(추정): 가격 정보가 없어 이름·업종·영업 패턴으로 추정한다.
-PREMIUM_KW = re.compile(r"오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|코스|한우|와규|wagyu|"
+PREMIUM_KW = re.compile(r"오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|(^|[^타])코스|한우|와규|wagyu|"
                         r"스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|"
                         r"셰프|chef|chez|레스토랑|restaurant|스키야키|한정식", re.I)
 PREMIUM_NOT = re.compile(r"정육|해장|곱창|국밥|순대|분식|뷔페|식당$")
@@ -269,7 +271,7 @@ def is_premium(r: dict) -> bool:
     if not srt or not end or srt < "1100" or end < srt or end > "2330" or p > 70:
         return False
     sushi = cat in ("스시/초밥", "기타일식") and re.match(r"^스시\s?\S{1,4}$", name)
-    return bool(PREMIUM_KW.search(r.get("merNm") or "") or cat == "프랑스음식" or sushi)
+    return bool(PREMIUM_KW.search(name) or cat == "프랑스음식" or sushi)  # 법인명(예: ○○다이닝)이 아닌 간판 이름으로 판단
 
 
 def mer_id(url) -> str:
@@ -583,7 +585,7 @@ def main():
 <section class="how">
   <h2>점수는 이렇게 읽어요</h2>
   <ul>
-    <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 95점 안팎, 1%면 86점, 10%면 68점 정도예요.</li>
+    <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 96점, 1%면 89점, 10%면 77점, 40%면 61점 정도예요.</li>
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
     <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>

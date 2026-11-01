@@ -1,14 +1,1590 @@
 {
-"fetched_at": "2026-11-01T10:40:15+09:00",
+"fetched_at": "2026-11-01T11:22:15+09:00",
 "source": "eat.pl 잇플 · BC카드 결제 데이터 기반",
 "picks": [
+{
+"name": "크레이지카츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KOceEPgyJbK4bRLPZF8COQ"
+},
+{
+"name": "리애",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Uo1pxi3Ze4fganig1gpaTg"
+},
+{
+"name": "라이너스바베큐",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BYcf5T8L3etDHPBtqNEMEw"
+},
+{
+"name": "앤트러사이트 서교점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TNXL2TCr6bJ9jW7vLu6NiQ"
+},
+{
+"name": "더코너키친",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gcEbjLg4WDksEjEBplj7w"
+},
+{
+"name": "푸줏간생고기점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QTHZ1CC78KJBoifVgOR1g"
+},
+{
+"name": "안녕식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gwEGHcF5kGwxcqVOnH0Qqw"
+},
+{
+"name": "대련집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/seVyuf7O9fbd8w4MXQHw"
+},
+{
+"name": "스시쿤 판교점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6emvVFKtMeGtZ2FmqmYDg"
+},
+{
+"name": "오징어야",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uXGZ2VjHS3uDSX6s3nnrLQ"
+},
+{
+"name": "이든돈카츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/82HrmjdHDPgopMXqJaXQ"
+},
+{
+"name": "요멘야고에몬 강남점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BTUyGvIMRnTG45UENXD6Q"
+},
+{
+"name": "풍화김밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/so3z946XXC933t48XHPSjA"
+},
+{
+"name": "라도맨션골드",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9WFrKOkdSZuVVN1KFmxEaw"
+},
+{
+"name": "강촌숯불닭갈비 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ioXd0u0STSWWQHpcbGgA"
+},
+{
+"name": "신도림참족발",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NZfuBDrlsKCKIFmpTNSWtQ"
+},
+{
+"name": "카페나하",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kklpDhHH7pod6vGJXU4ANw"
+},
+{
+"name": "참나무숯불통닭",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0r2k7mv1NbYbG6ILNJW4A"
+},
+{
+"name": "미자카야",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/vlvKAdDev1P6wWWm8RBylg"
+},
+{
+"name": "기꾸초밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nNepFTScfLBzq9nNVbnQgg"
+},
+{
+"name": "제일곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/X4oRFLUNzzJMp3Z8BWTg"
+},
+{
+"name": "발해족발",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VD6172qtMeUk6Brlf1rBQ"
+},
+{
+"name": "부타이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QbqbUn31LDuWAg34o5mIA"
+},
+{
+"name": "도노베아토",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IPDb6zYuGFhzSTrRhUuPQ"
+},
+{
+"name": "깡통만두",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IK33lYc5jpImcTNy8J5jOA"
+},
+{
+"name": "육전식당 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/U59TzTgmliqR2j8uQerRQ"
+},
+{
+"name": "데미타스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/goxOegnoFoPm3zApES6G1w"
+},
+{
+"name": "알로이막막",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/EYIe3FQz5OHexxB7pwU5cg"
+},
+{
+"name": "보니스피자펍",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mRezDkYRFwyRdh6bNViqQ"
+},
+{
+"name": "바토스 이태원점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/oIS9OoEvNQkI3oTvP4Zzg"
+},
+{
+"name": "땅코참숯구이 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9ngeATv6iTYtqZLbT4Kw"
+},
+{
+"name": "부산아지매집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ggaaeqTUnI79h7SyPVwg"
+},
+{
+"name": "맛나식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gnxZv1Vet6MDefScvU8nQ"
+},
+{
+"name": "돈그리아",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lS55ikmDYvFaFp6MCs0dDA"
+},
+{
+"name": "청실홍실",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zRyUz1jQDOgBBecfV1Nojw"
+},
+{
+"name": "강가네빈대떡 1호점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sqAJrlKerxTpY20qAvvJ3w"
+},
+{
+"name": "조금",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TS8gbiIcl3CkFS0v6lIBw"
+},
+{
+"name": "화목순대국 광화문1호점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lmAkVyy2dC4ZWoFKHsQJwg"
+},
+{
+"name": "오는정김밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VNaOUkpPFtrJkGUO9anwJA"
+},
+{
+"name": "젠틀키친",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/j1jWg5h4LbSYDSkJI7JbFw"
+},
+{
+"name": "흥도식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TDVsLbaF4BmV2ALyjgd3Rw"
+},
+{
+"name": "봉다리크랩",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/XmTPLS5PeEBxmCXGXtEQ"
+},
+{
+"name": "아카사카일식 강남역본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6oUiUz2fnsLyPjNVCY5l6A"
+},
+{
+"name": "31금룡 삼일빌딩점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/SXPvTKGq3ffwVvI5HLLg"
+},
+{
+"name": "77수산",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CUFBfFfUrP6r0C6dx8SlA"
+},
+{
+"name": "88생선구이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/eLyUULiyLQqBbnY8mIQoTg"
+},
+{
+"name": "943킹스크로스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/N9NJjAWIbS5Gc6Vvz2dieg"
+},
+{
+"name": "가가스시",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NQBdSinubAla94sWmJsA"
+},
+{
+"name": "가메골손왕만두 남대문본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/28k3iJHUYC4xd2jrxIiLA"
+},
+{
+"name": "가양칼국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/PyktNFLyXW0nnr8nXKB6w"
+},
+{
+"name": "가원 여의도점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/5PRXoIDqJeRn9OJGgBVqtg"
+},
+{
+"name": "각두골",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lZaLjxIvpcteDPBne8wetQ"
+},
+{
+"name": "강남집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8JJnKQjy6KwJAhxWboPw"
+},
+{
+"name": "강원정삼계탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/njp7NuubB141JPynRghCg"
+},
+{
+"name": "거북이금고",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8gjUhWlddhlt3iKyOQYaZA"
+},
+{
+"name": "거평식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3KHtkHic5IvaIxJqCJ1g"
+},
+{
+"name": "경인미술관 전통다원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/F0sDJXVUwPdKFdc9OcuSg"
+},
+{
+"name": "고고니 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9Cts9DEA6il6usiBHO8ISA"
+},
+{
+"name": "고기싸롱 태평역점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/miMkFNesfW8K3vruYk1QEQ"
+},
 {
 "name": "고청담 광화문디타워점",
 "merUrl": "https://web.paybooc.ai/mer/web/profile/Mxj1kft0LELtLEYuEG1FSg"
 },
 {
+"name": "골드피쉬딤섬퀴진",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/YuJ4DgVm1tXIctIDDn6Ww"
+},
+{
+"name": "골든센트리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/rNz11iTrawEBpkO0pGwsQ"
+},
+{
+"name": "공간갑",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CfMnBl4RWYIcmVJzfsjyA"
+},
+{
+"name": "공복식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7ISmWN11mfYyxzyrxYj6Q"
+},
+{
+"name": "공주북경탕수육 한남대점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/RWe7Rmxa2YAWTdteBwsZ8g"
+},
+{
+"name": "광야",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7TN5eNoPTl3m5OiCvrEhg"
+},
+{
+"name": "광화문뚝감",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/hr61fwp1wrL7iNL9eAhqVQ"
+},
+{
+"name": "구봉산돼지갈비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sqtNcYFE4jGfaDMVn9zQ"
+},
+{
+"name": "궁서체",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/c9Ek4WHhqVdGPmqMLrDFg"
+},
+{
+"name": "권영수대가전골",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QNiJnzRTs7ujBCzzWNKbvw"
+},
+{
+"name": "그랜드하브",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nyVFKKqXrtNq9ts7j3FCLw"
+},
+{
+"name": "그집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Yj1hYUYrlNWXVdvP6ro6ww"
+},
+{
+"name": "그집곱도리탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/czYArkew6NU1yEmhVBQ"
+},
+{
+"name": "금동참숯화로구이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CIELNhfirBMZmbhgo9FQcQ"
+},
+{
+"name": "길목 신별관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3u9fFXKU1mHzlOtmvnh4FA"
+},
+{
+"name": "김재훈고사리육개장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3i5JUVufPD1p09KdNePrA"
+},
+{
+"name": "까치네",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Z1ocnHJq00a50IMziHa9Pg"
+},
+{
+"name": "꼰미고 송리단길점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jjRglPS40BMMFwPoBWi3w"
+},
+{
+"name": "꽃돌게장1번가",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pUYqasVrUY2FITJIzN9WA"
+},
+{
+"name": "꽃돼지국밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/c0e0LzgN7sQjd8bj5liXw"
+},
+{
+"name": "꿉당 성수점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sh0IioOudnsIvNdAL18IQ"
+},
+{
+"name": "나니요리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kRhjAtQy9ClWb0ujq1EBVA"
+},
+{
+"name": "나로도치킨",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NaCVBOI5M4Y3vVWxmNrW2A"
+},
+{
+"name": "나루",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UpQ9TXEAtQqp4pxX3FJYug"
+},
+{
+"name": "나주곰탕사매기",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/o2UcIhuK4hP86dj7tciUQ"
+},
+{
+"name": "낭만원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ekmNthGk85ocFBeUGon9Q"
+},
+{
+"name": "녘",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/HUq0v8phsQo84TDusrj7HA"
+},
+{
+"name": "노스트레스버거",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2CBd3k5KG03OY6E5Sj0g"
+},
+{
+"name": "녹지 종로직영점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/RwXbZOtoNOP9fqRXgjEsA"
+},
+{
+"name": "다가양조장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/vuvU1afkISvTFHkxD4zA"
+},
+{
+"name": "다동커피집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dFVoBWeyjimR4elWcu9dig"
+},
+{
+"name": "다시버시",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8upnxdIECjNM2TucB3SMw"
+},
+{
+"name": "다이호시",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/guLbimbEddbuy7pQPKJeHg"
+},
+{
+"name": "다케오호르몬데판야끼",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/d84rB0caAUShpjgmCTWBnA"
+},
+{
+"name": "담택",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/iT3faQe1omTo9j8KGxPXyg"
+},
+{
+"name": "대낚식당 성수직영점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZfdmtDctGPpepEIo2Cg8w"
+},
+{
+"name": "대쿠이 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/YrWS01RJG4bZr6vyfwggrQ"
+},
+{
+"name": "더릿",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9kuzoWctqpdgW5XcwZPQEA"
+},
+{
+"name": "더마칸",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/EsVRvggwB9KXZkF4vIy0sA"
+},
+{
+"name": "더티트렁크",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JatGDh6nJTn2EeJ91vInJg"
+},
+{
+"name": "도넛정수 창신점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/f9xPQ9alJs6v01Onneg"
+},
+{
+"name": "도마유즈라멘",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CV4ABE6I89XsiVfipVg"
+},
+{
+"name": "도민상회 월정점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/RKCeKuQycPgeCabzJ484w"
+},
+{
+"name": "도셰프",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/49oRWIJKrh5MVQKIvqnAOg"
+},
+{
+"name": "돈가스진옥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/bvWfpkEzN9BZelG63KGUQ"
+},
+{
+"name": "돈멜",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/xnswEfOn1SAWSYBYEXGfxw"
+},
+{
+"name": "돈스파",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/379xMV85bJvy1fJDsMIkA"
+},
+{
+"name": "돈탐구소",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IMZPapQ7YgvlAREsUw"
+},
+{
+"name": "돌박사 나주점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nbWORhisUVZvIUEQjMSaw"
+},
+{
+"name": "동광알탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2Xi1e3bEqPeidl9CDSdELg"
+},
+{
+"name": "동대문곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VjZkWIedRTJCnhJCoskeQ"
+},
+{
+"name": "동동국수집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/WpUaZ1A6RnnGbMn4HknA"
+},
+{
+"name": "동해루",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/HTaTBRn8C7Spv63jFB7aw"
+},
+{
+"name": "동화가든",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Gl5D75TdOiTuYbZzcqm4bw"
+},
+{
+"name": "두에시스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Du30QidSJIlM9aH62OS4w"
+},
+{
+"name": "디라이프 스타일키친 광화문점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/29mzPFlFHh1qQaAon2RDA"
+},
+{
+"name": "딘타이펑 강남점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/v5ePtgdkLRXWCHg2VHoRw"
+},
+{
+"name": "딤딤섬 파르나스몰점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/n6nNp1v9aJtxrJYbzIFbhA"
+},
+{
+"name": "뜰안",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UWzYkEJh9hKplnQs5eWPJw"
+},
+{
+"name": "라온숨",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wYcRA2JYpq1oRbUouMN2SQ"
+},
+{
+"name": "레몬그라스타이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/5vSNYqNGascHPcBZ8hjzJA"
+},
+{
+"name": "로스가토스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MWpVHZpYt4lqXhTs6Cw7A"
+},
+{
+"name": "로우키커피 헤이그라운드점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kwvb9T7Y9clSJSogtunQ"
+},
+{
+"name": "로이식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/GjmSP45ag4BkullyPZ1SLw"
+},
+{
+"name": "롤인익선",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yT9kf53I5X29MueV4kZobw"
+},
+{
+"name": "르브와 종로점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zba8ORPw5g1LUQEAiXhw"
+},
+{
+"name": "리스카페",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/OJI380brwY3qc0GJUBIw"
+},
+{
+"name": "리틀크레이지피자 이수점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0UGusLJBncpS8bKrf1saQ"
+},
+{
+"name": "마나오",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4IBDYwIdztmBYXfVjzmnuQ"
+},
+{
+"name": "마노디셰프 삼성점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/959P4UN0U8tlCtKKxtENQQ"
+},
+{
+"name": "마라왕 명지점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kzbwJhL60a2YQ8FidoEw"
+},
+{
+"name": "마코토 청담점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3CSJAuMF9yjMd9RDgkVlVw"
+},
+{
+"name": "마틸다바베큐치킨 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ppuk1ar19tbwWSV7UeQ"
+},
+{
+"name": "만두집 미사점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/PUguEghqwpG3OvkS9XHLw"
+},
+{
+"name": "맛집식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/s15XFOXMdmfW5EdnQVlNQ"
+},
+{
+"name": "맛찬들왕소금구이 종로점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MwVjfbDEmLSu3qm0sMnHg"
+},
+{
+"name": "메이커스 유니온스퀘어",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/687N4hP15gy7YKfpuTNyvw"
+},
+{
+"name": "메종루블랑",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/V6Hi2E0PwFg3jRAvUkJrGw"
+},
+{
+"name": "메주꽃",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/k7wJlfdFdo5LvFqGxMgSRg"
+},
+{
+"name": "멘야미코 청담역점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/idhHfUGqe21ZSUTNvsM7g"
+},
+{
+"name": "멘츠루 종로점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1VlOQ0UShWqQJgmKMLog"
+},
+{
+"name": "면서울",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ilus8BPSVbFlaHWr0bX0g"
+},
+{
+"name": "모꼬지",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FfrP8cq2367UKgMe9zapJQ"
+},
+{
+"name": "몽탄",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IU2bZ7RFOeZALAHOVOJIIQ"
+},
+{
+"name": "무월식탁 파르나스점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/C7euW9beq93cX8TXCzx4Q"
+},
+{
+"name": "무탄",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ihwfbw3kJgn0QEvBh7cslQ"
+},
+{
+"name": "문배동육칼 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/O28ZK80bN7Zi6Tj327wD0Q"
+},
+{
+"name": "문자네통장어",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8ljWe4uZCO5PFlImX2Ynlg"
+},
+{
+"name": "물고기자리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/XVDFoJ47G3z8ZZF4xH7m2w"
+},
+{
+"name": "미분당 여의도점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TpjePqKKr1JANtZJsRa0Lg"
+},
+{
+"name": "미쁘동",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9BmKsrCAiKJGJnjlWFxkdw"
+},
+{
+"name": "미우",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jc7f0KGpVJqkhIe7kRs1A"
+},
+{
+"name": "미태리 수서역점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZcmtwUZ8d1VZ2YdqvkhQ"
+},
+{
+"name": "바다김밥 중앙본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CCYAnYU8tk4w0GVySL7CJQ"
+},
+{
+"name": "바렌티나치킨비어 충무본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ub4dUUaUHdeKI9bdPIqbfg"
+},
+{
+"name": "바리에가타 신논현점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QPLDkPTohoHIuiz5SZlzNg"
+},
+{
+"name": "바마셀",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3y8frKQpV3o7oM2ubciiw"
+},
+{
+"name": "바삭마차",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JAVhQMRshZjKp3SPlqxPw"
+},
+{
+"name": "바우카페",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jyaKdPD2wl4uszDbHhxkg"
+},
+{
+"name": "반치앙마이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wlw2haCrHv3k2kB0Xwl0yA"
+},
+{
+"name": "반치앙마이 위례점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/cYxI0w82JD6FDSGsY2t72A"
+},
+{
+"name": "반쿤콴 종각점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ioz0bv28VaHvX4gcBH7g"
+},
+{
+"name": "발리인망원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TwNqrhO8FHPKWqIxZw"
+},
+{
+"name": "백부장집닭한마리 본관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0sULIxJoeNBh3XIV6U2zuA"
+},
+{
+"name": "백촌막국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/srnFosqBCQjsLorFaKzrLA"
+},
+{
+"name": "뱃놈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/XjLmEGmdmL9XV6AGVQtqIw"
+},
+{
+"name": "버거스하이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Xb57VcZ4isvTaN0YY2SPyw"
+},
+{
+"name": "버거인",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/H4tLd3JLm1eFDn7TnP0T9g"
+},
+{
+"name": "보배진",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dyc6cUt9SSppaoUHzdC9XA"
+},
+{
+"name": "복정집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6YklhainvIW3LDy5YZNbg"
+},
+{
+"name": "복춘식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zw4d8YKxvXlzZYxupln3Q"
+},
+{
+"name": "본고향맛집 을지로4가점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3xpkzokFAPHWlil0bT0gQ"
+},
+{
+"name": "봄의정원 성수점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ShnPYbI7oei3xZmaW1siQg"
+},
+{
+"name": "부부횟집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zUQp7p5JIjCbApokxpDA"
+},
+{
+"name": "북경탕수육 공주점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VUuTeXsR0jC3k329wTWtRw"
+},
+{
+"name": "북촌김치재",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jDJJtTjgOLnESxSn6TVccQ"
+},
+{
+"name": "불래",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0JdTVXV35arvbabAYiKtVw"
+},
+{
+"name": "브리끄",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gCSsWpgCbVB737EgENxvA"
+},
+{
+"name": "브릭오븐",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0wkyOBcPIRd18rrrBW0pg"
+},
+{
+"name": "비아메렝게",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zlnwOO7HQhwfxQA7oE3Eqw"
+},
+{
+"name": "비어드파파 코오롱스포렉스서초점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VVJudH1Q8iCBhcTRTFvRHQ"
+},
+{
+"name": "빠레뜨한남 수서역점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/LWjqbdhrPthrnpHhxV8Kg"
+},
+{
+"name": "빠우",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/K2TmDG3CbcMZE9xoYYVbDQ"
+},
+{
+"name": "산골",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4WMVcx4Mez2FJq0eSo4usA"
+},
+{
+"name": "산모퉁이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/oGTU258Plxdqywnam1Rl3Q"
+},
+{
+"name": "산청숯불가든 을지로",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/5PerJQPAXnzEeK3eOqrw"
+},
+{
+"name": "삼무곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/S7Ph4cJB4xhoaRlvPMtag"
+},
+{
+"name": "삼원가든",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ond3lAH2yUPx5pbW4gPiA"
+},
+{
+"name": "새검정",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/oMdiJaqGNfQ7IhJnBbhQuw"
+},
+{
+"name": "새로이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/LP3Kwn7Z8b45QPLLncv4w"
+},
+{
+"name": "새소리물소리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JT5ibQXKgIogQgPB2FdIRA"
+},
+{
+"name": "서궁",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/11XsB5upVH36xhLtEpL34A"
+},
+{
+"name": "서래애물총칼국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/qLc3Dl1ksBWbMivviKe9AQ"
+},
+{
+"name": "서현실비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zGOLaZT0N6UX3V7xUhEegQ"
+},
+{
+"name": "선재",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZpvSNh5UPgfDmLhmF7aYbw"
+},
+{
+"name": "설봉산약수터집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/qlgBANrVbA3lDWbh5AEBHA"
+},
+{
+"name": "셰프테이너",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zd8JX7rAjyw6LeeUp4Fg"
+},
+{
+"name": "소나무집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dkk8bWrhODBAacYGkdG85w"
+},
+{
+"name": "소몽",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/saPQw9PKmhcKFyycT70Kg"
+},
+{
+"name": "송파사랑방",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kqoD4pmXiUJdRr0EiFYq8w"
+},
+{
+"name": "수수하지만굉장해 해운대점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IEXQygPlUxh2MGjuCdeDA"
+},
+{
+"name": "수정식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8JQKhSxnn9X2xs6NXVVA"
+},
+{
+"name": "수하동 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2a2MnknWnqPf0z3LfIilLA"
+},
+{
+"name": "슈보카가리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Noo5phMzgslScaNMK2FGQ"
+},
+{
+"name": "스바루",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/eVVN8TmSUL4Z5Nwtae4LAg"
+},
+{
+"name": "스시렌",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/f7VVow29jXzOtVlGjmA"
+},
+{
+"name": "스시마쯔",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/WKtwlfc4zNVERToCQpts0g"
+},
+{
+"name": "스시아오마츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/X5qSN0Nw9g7VFDNhrjZOug"
+},
+{
+"name": "스시유이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/D64obHjP1SQXZ97NXWcA"
+},
+{
+"name": "스시이젠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6kHqRKAltIPWts2X492Q"
+},
+{
+"name": "스시현",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yWG6ZEo2bLcmYzF5KVA"
+},
+{
+"name": "스파게티가있는풍경 광화문역점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/y1v0qzRFtWL9Ae2UU6QHg"
+},
+{
+"name": "시드니월남쌈 경주점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/DChpsQTBPMtEtg3yJra5HQ"
+},
+{
+"name": "시오스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/p7XvOYsWoSd5XPmvVlYBA"
+},
+{
+"name": "시집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mBXIar2g95xB9WIeZoQ"
+},
+{
+"name": "시추안하우스 삼성점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/P3sBI2DxLPuLNApaF3kofA"
+},
+{
+"name": "신라인도레스토랑",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0OkwtympNJGM3ErnvcT5w"
+},
+{
+"name": "신락원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/cvNQoxDqnNRizHeMRK2FKg"
+},
+{
+"name": "신발원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/GjNrYl3RvfA6Ckd3DeZA"
+},
+{
+"name": "신선칼국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ecDVGAVeV2GznRCn2WQYkA"
+},
+{
+"name": "신안동갈비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/64Q6dyaSVDFQPSmvSCQYRg"
+},
+{
+"name": "심마니",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sv0foR1fz0jzMkyMauZHQ"
+},
+{
+"name": "아란",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QD5xRHKjTj0ntmZA2yvZJg"
+},
+{
+"name": "아살람레스토랑",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NwwxtLTaPZ2zYSpEyyrwA"
+},
+{
+"name": "아울 구의점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6YOG1O5fChWyVLMYTESOwg"
+},
+{
+"name": "아저씨대구탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pZi9i5UwAjhA9uESEjCcFg"
+},
+{
+"name": "아타타카이라멘",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MWQbysqU03r50zhe3csXCg"
+},
+{
+"name": "아트쉬프트",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/GFkXXGH4lqIN8DOu251b9A"
+},
+{
+"name": "안도스시",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3kpGSJHdfkBsm69BCCQGw"
+},
+{
+"name": "알베르",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KdP3933FrZwRq18QfBcw"
+},
+{
+"name": "양인환대",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/87fLhJOnL3aaAcKQBHTuiw"
+},
+{
+"name": "양지식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JRx6GPvHuIB3pPMRIX1VXw"
+},
+{
+"name": "양키스그릴",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8Z3i1AkoDSX6ePZ2vhrbvw"
+},
+{
+"name": "엄용백돼지국밥 종각점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/fUdA9H0NLBhOgEakdWb5ZA"
+},
+{
+"name": "에베레스트 동대문점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kjO39YUgPPmJvRvod3KbDA"
+},
+{
+"name": "에스콘디도",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UUu61Xl0ALGibxyPJP4mXg"
+},
+{
+"name": "에이오피",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6hNaFQtbbJaN0VNoj6tWQ"
+},
+{
+"name": "에이프레임",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/HyqL04BAlUcN7TscLEh2yQ"
+},
+{
+"name": "여수하모샤브샤브 여수맛집 민들레집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KZglDoIRf25fR0yfIeIzdg"
+},
+{
+"name": "연미정 회전오리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1jRkLdS5AkaKUanJqPRxaA"
+},
+{
+"name": "영동족발 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/cRvhK0MhZf6C8Rt5GIUNaA"
+},
+{
+"name": "영동포차나",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Rxhir9A8OPXgMwazktlknw"
+},
+{
+"name": "영화루 세류점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JsCRRvvM3dSYACXZ4QAZRQ"
+},
+{
+"name": "오구당당 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9lDSsp7eopusqmRbkCZpg"
+},
+{
+"name": "오늘돈카츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FB295kpMVMGxD9Lz3w"
+},
+{
+"name": "오랑우탄면사무소",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/En9UtiDabF1CBRZgziUJg"
+},
+{
+"name": "오백냥분식",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BoeCLParSQKGp1hDl8nuA"
+},
+{
+"name": "오복수산 여의도점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ktPIy0T8VIqzoTRVD8stzg"
+},
+{
+"name": "오봉집 종로점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/WHw9OkSqqQFeyiyV8lO3A"
+},
+{
+"name": "오양식관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/YRkZpqrqDvVTAkWkOQR6A"
+},
+{
+"name": "오제제",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/LokphSn01EV6NkJ5dM3xmA"
+},
+{
+"name": "오죽이네",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ryYduXVBq2x79noVo6ueg"
+},
+{
+"name": "오츠커피",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/V0iXKSloxNPH3y2bctaw"
+},
+{
+"name": "올더웨이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/xpJbAVrsGLNHV7cnz1yaA"
+},
+{
+"name": "올디스타코",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/RKp5jM3VML13EbAMzjrDIA"
+},
+{
+"name": "와",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JjI428EvNYeXHaEExXKA"
+},
+{
+"name": "왕가동해장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/G1d70kJFk9so4E8jYdptg"
+},
+{
+"name": "우공뭉티기 수서점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/k1cwKciIzg6PtRuUwGFQow"
+},
+{
+"name": "우스블랑 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MZSXpWx9WxWyNIto01jkw"
+},
+{
+"name": "웍셔너리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/L2ReTfNJL6hvKciTBZHLwg"
+},
+{
+"name": "원조성우한우서서소갈비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/tOUNFxDlK3oGX8vxWKoXw"
+},
+{
+"name": "원흥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zKolpNTs7r6y2t636AHw"
+},
+{
+"name": "월령작야달의객잔",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/PfevVhDwupeAIVSMcbmPog"
+},
+{
+"name": "월화식당 마포본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3bhs43zyLAhCm7CpwecjQ"
+},
+{
+"name": "웰빙황토우렁이쌈밥 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/m5cKQ74YHAHFJKzLmDCWw"
+},
+{
+"name": "육반장 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8Aq4bgQmSjgREvUf1DAdVw"
+},
+{
+"name": "육성급",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/AhcjKi0oMvUlWdstduE6g"
+},
+{
+"name": "윤밀원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/oayFT97Dn6zSYi0EU9qlNg"
+},
+{
+"name": "윤쉐프의고기집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Z9ehCo2mOylzFJ0TDNQqkQ"
+},
+{
+"name": "으랏차차스시야 검단점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/B2CwlYqhZVvN65jQbvoL7A"
+},
+{
+"name": "은해갈치구이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Eb3uDd5AosUmcziVfaorg"
+},
+{
+"name": "을지다락",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3WvSaHpOKKDSSoc8ThULgQ"
+},
+{
+"name": "을지로유카네",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JjAHWCZW6U5YHOn1SbcH8A"
+},
+{
+"name": "이가네양꼬치 양재역직영점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VQjxBrshfs0lycwO1n1Uw"
+},
+{
+"name": "이경문순대곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/HPA6j2F6fl9fsVgbhAcEWw"
+},
+{
+"name": "이닛 (INNIT)",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sdTnirBsCp7UbtodFdQg"
+},
+{
+"name": "이맛에온다 주문진본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yctf4ajtwezplak2ZsZBw"
+},
+{
+"name": "이북만두",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dTrgUA7Xg5daf1wG6r7bBA"
+},
+{
+"name": "일신기사식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2aFFYkq3JfLehR2bbUFig"
+},
+{
+"name": "일월카츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IsBJ2CfqYuqB6lnjFvAg"
+},
+{
+"name": "장군뽈따구숯불구이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/bbDoLJH0SYWK4Mc72dgQ"
+},
+{
+"name": "장꼬방",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/EPHHMANnboCAZRUSEvJVQ"
+},
+{
+"name": "장지녕간장게장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/65uLTRUbTtL1kLCKvzrdQ"
+},
+{
+"name": "장호더그릴",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TQ7EIC9lSuL7F7rMwwMw"
+},
+{
+"name": "전원식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/cn5HAwMhEXc6aulaugg8MQ"
+},
+{
+"name": "점보씨푸드 IFC몰점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/SpUvaKB28IMQw7DhSIAvYw"
+},
+{
+"name": "제스티살룬 성수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8IV9oXMjzzojzyGSvEVzoQ"
+},
+{
+"name": "제이콥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/HyRKODbKXwiCBy0dCfE6A"
+},
+{
+"name": "제주해인물회",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pLktOWiOsks1VLKx6VmILA"
+},
+{
+"name": "조대포 남영본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZXyzwNZpwaTxwxH1FJWb6Q"
+},
+{
+"name": "조양방직",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IyOnCbvp6Dhi0YwffUz2mA"
+},
+{
+"name": "주은감자탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ymCSn8SGCVoXZiJeiHgxw"
+},
+{
+"name": "죽마고돈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/AAVxklCgjbigblLg2ZBA"
+},
+{
+"name": "중경삼림",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/rBOWTubC4lOeQpY01U6Fg"
+},
+{
+"name": "지린성",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/igQ8SwBT7mI7bDAz9DgkKg"
+},
+{
+"name": "진가와 여의도점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/vSMJfhPddojP7iaWx9HCg"
+},
+{
+"name": "진주회관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KWTW72meLYWJReeFfeJg"
+},
+{
+"name": "집게집 위례점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mGgNrrF163Ju5fX6Y48oyg"
+},
+{
+"name": "찌마기 구의점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NnFm92e46lYCu8BHwaKm6Q"
+},
+{
 "name": "차알 광화문점",
 "merUrl": "https://web.paybooc.ai/mer/web/profile/DNvwFYZV26ALd6VyD3V3xg"
+},
+{
+"name": "창성옥 용문본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/b78gnGYi1n7LbAFr2law"
+},
+{
+"name": "창신육회",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/eCY6AwOwjRPUrdpANcVhiw"
+},
+{
+"name": "창창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ytlFat3UvvFcrEC18khw"
+},
+{
+"name": "청담피자 청주봉명점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/OuB99E3OlHExQ3LcWtc6w"
+},
+{
+"name": "청류벽",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/xS0RMXT6InpadxXXaWpHGw"
+},
+{
+"name": "청수당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KxZ2N1rbz4JnZ6LIC3Ax8Q"
+},
+{
+"name": "청와옥 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FGiikondLdkjSeP6ePGnWA"
+},
+{
+"name": "청원한우마실",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/OMbGOuxOyn2gk9igVIKUg"
+},
+{
+"name": "청이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/emEFFZOvcS030LDsCRfww"
+},
+{
+"name": "청춘종합어시장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/K5shsYNab6htBxH9k1vVQ"
+},
+{
+"name": "초돈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ffCHLkn1m5rTNmp9nG7Q"
+},
+{
+"name": "초원",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7GXADesxfuOBIGBkCYTzg"
+},
+{
+"name": "충남서산집 본관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uJ213ZmIC4B9kKciRZW8A"
+},
+{
+"name": "츠키젠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wrBNVcjJLz6sHOnFlrK9Tw"
+},
+{
+"name": "치마오",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1E4DFrpb4520zV8TYB6R1Q"
+},
+{
+"name": "치즈룸X멜팅샵 파르나스몰점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nQNZHyR6c957sdRwOTr1g"
+},
+{
+"name": "카츠키",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yAVoHRyRzAjteHsk0hG4g"
+},
+{
+"name": "카페 레이어드 안국점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IwlYv8GZmKXgTrQQl9dPAg"
+},
+{
+"name": "카페대너리스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/DXr8QWlHgUnrOJzg3lnIZw"
+},
+{
+"name": "카페산",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MIpfY9ou2TryjVS0vVZFzQ"
+},
+{
+"name": "카페이클립스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/iLz0wMCrOmiuh0QmwCZTw"
+},
+{
+"name": "코랏",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wG9EY6t3ZLRcVIGg83q6gw"
+},
+{
+"name": "코코이찌방야 종로타워점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9tdY9G8wlgxDfnnnL486WQ"
+},
+{
+"name": "퀴바라",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dKRhyuLSatZvgpHjYihFg"
+},
+{
+"name": "클준빛날영",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pmIBtWU7QgG3ieiTJuQ8Q"
+},
+{
+"name": "키친오브인디아",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/OUkIMU0SRnAbTWGIihvQlg"
+},
+{
+"name": "테네오",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/m3ZeNK1M0Jt5PoVkzbw"
+},
+{
+"name": "테르트르",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2tg0Q43ZeczdhxMVRNtlw"
+},
+{
+"name": "톤쇼우",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mrnQLcrFH9Ki0S2aQq1zQ"
+},
+{
+"name": "통나무닭갈비 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/cJVD1KUlQECyV8nre65hRA"
+},
+{
+"name": "통돼지",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pu2FPwsMxGQT5nTljNqnYQ"
+},
+{
+"name": "티롤도너츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7M9s6N7ywsGz8MThukfeaw"
+},
+{
+"name": "팀호완 삼성점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QAXO2nGVeQN0YEGRaYnrsQ"
+},
+{
+"name": "파머스키친 버거점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dNY4OrJ8diysUYCuM3KKnQ"
+},
+{
+"name": "팔숲",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1FVss9ySIp7CA4DWPvJj9A"
+},
+{
+"name": "팬더하우스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jtpZagswWDS6Htt2DPW3SA"
+},
+{
+"name": "페르시안궁전",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wRJIsJEZNcSasCuSJa75Q"
+},
+{
+"name": "페이스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BkwCuPltep5OmI0giA7w"
+},
+{
+"name": "평산옥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/MgsTR3tc0TgHUrqpb7TUlQ"
+},
+{
+"name": "평안도족발집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yJAtrTuUMkAuKWd4Eyg"
+},
+{
+"name": "포러데이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UAJjdFB9LKj7p2m94nnEbQ"
+},
+{
+"name": "포레스트아웃팅스 용인점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/qafnvydGYDbSMa9ExwzCA"
+},
+{
+"name": "풀리김밥 성수점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VmEJHmPJyeDn2Hg0EhOkxA"
+},
+{
+"name": "풍년식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FV1P5S6fF5i2mExqLCbkaw"
+},
+{
+"name": "하나나주곰탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/H7yBJVJWidyqN6FylfN2QA"
+},
+{
+"name": "한비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ijRCuOLXbt58PkYkG9rZ7w"
+},
+{
+"name": "할매집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/eWtyR0d5qjq2ygkWFXqg"
+},
+{
+"name": "합천국밥집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Q2eeWJoROwaYbLFRMT3kWw"
+},
+{
+"name": "해봉 무교점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kmwWlqyBUvN2uQjdVxG3w"
+},
+{
+"name": "행운분식",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4s344K5NQgh0XE2tCrQkQ"
+},
+{
+"name": "하이디라오코리아 강남점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lt33NMHY6YihFp6LjD1VA"
+},
+{
+"name": "라디오베이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jNtf9eh9wUk9vfxtXVrfw"
+},
+{
+"name": "갓파스시 구로점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dt6Wk7cAPlishiwhrHLw"
+},
+{
+"name": "봉피양 마포점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Z6b4CWYC5rGtdpbbEJp6PQ"
+},
+{
+"name": "여신족발",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6Y7dwYGjnDTe13XZAgXRBA"
+},
+{
+"name": "통영집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Nk1gFZ8N3meigiDyrxjnbw"
+},
+{
+"name": "호수집 원조닭꼬치",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uKU6joGWFL7fTsAUFvgAA"
+},
+{
+"name": "미스터서왕만두",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sYCtVoLtpb1Xp9P1gXIg"
+},
+{
+"name": "이돈집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NWnGA2Lf038NR77oeORhgQ"
+},
+{
+"name": "두툼",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/brEWFcwVSRHPHJhPhvAygA"
+},
+{
+"name": "도동집 본사",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/SNlAlkYgDrsFYH5u6ffSFQ"
+},
+{
+"name": "태향",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Fhy1WUsk2vurFpeLDSdWFw"
+},
+{
+"name": "부암동치킨",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/fMA55QNh0w6hLJZemG5Rsg"
+},
+{
+"name": "함경도찹쌀순대",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JlVnL9WlTIuc2HR1XBgMyQ"
+},
+{
+"name": "혜영식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TxHyNdrTbl2rG8AjKmv6A"
+},
+{
+"name": "수원집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9HjuGyb2lawnBMFVANFrA"
+},
+{
+"name": "마포집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QUdlL1FBYixtmba9hu0HOA"
+},
+{
+"name": "다츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sJ6zH3dQ6fJFBp7wGtgg"
+},
+{
+"name": "굴예찬",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Zom5eGohzCYFJW1XcuQUrg"
+},
+{
+"name": "땀땀",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/y11IeCYXTDqGSDCYGGxw"
+},
+{
+"name": "칸다소바 경복궁점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/c7qFgBicSlCn4IJswzzk4w"
+},
+{
+"name": "성북동집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/bxRKijC9voDLm4ZpwiQ"
+},
+{
+"name": "이름없는파스타 대학동점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/e70sbMlFXLupQ3hZCQkjWw"
+},
+{
+"name": "멘야하나비 서울본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QI2wyrXvGUS1fHXfSmBfCQ"
+},
+{
+"name": "어니언 안국점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/EsOpItSX8YLuNPqFfe25TQ"
+},
+{
+"name": "매덕스피자",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sVqzXFD1aE87aXUt57DG0Q"
+},
+{
+"name": "도산분식 도산공원점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NdszG3zuJgCWGdMQNQzRQ"
+},
+{
+"name": "코아손만두",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/a7kCyDvIRmrkyrbuAeg"
+},
+{
+"name": "대도식당 왕십리본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Sb8iupaEofi1yzUZ4Zru7w"
+},
+{
+"name": "광화문미진 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/DGDdvvSXU2HEbepKnQWWDg"
+},
+{
+"name": "리틀노작",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/27OYdLFkD1bMLnT98DNylQ"
+},
+{
+"name": "오스테리아오르조 한남",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wcxOXh6wqszBeo0EV7mJdQ"
+},
+{
+"name": "이치젠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sxBJMwHeVNyh34ZdhagQ"
+},
+{
+"name": "고다이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JBjnNwQsvHimRPoNqyXaQ"
+},
+{
+"name": "아원고택",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NOp8vAH3xbSY7pQ7AOzhw"
+},
+{
+"name": "대명소곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/i5fqls0mRxbcshMCceiQ"
+},
+{
+"name": "농부보쌈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UBisIttxFf8hXrb83nQ3w"
+},
+{
+"name": "깡통돌곱창",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uMsFpkmdPn4WjgkV1hBHw"
+},
+{
+"name": "오직한우",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/kYPkxPOGjAAfM2EqzWi2Q"
+},
+{
+"name": "마시따니",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0II9c3tp3lEfcjHpjaMw0A"
+},
+{
+"name": "중앙해장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wH2u31cGOaOkjgvHBhdSQ"
+},
+{
+"name": "경성모밀",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NawTTMwDL8tLZ2XuKwkObg"
+},
+{
+"name": "문경올드",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/GIq1UJUKEPiOIHabk6JEA"
+},
+{
+"name": "마파두부",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BZMJsZPFivBcT2rrAJZGw"
+},
+{
+"name": "구옥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2nJf8M9YMjjJFnkbd3yRQg"
+},
+{
+"name": "고량 주관 종로 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/umrnK3WzdAMHI5BvjOemQ"
 },
 {
 "name": "갓덴스시 롯데월드몰점",
@@ -395,6 +1971,514 @@
 "merUrl": "https://web.paybooc.ai/mer/web/profile/MinwAiD6nRfeRRwic52Rrg"
 },
 {
+"name": "중국성",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZSn2alB9uIfl0NV0sxQZEA"
+},
+{
+"name": "진신",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nWAjY37Ey4rxgAt0AgvbwQ"
+},
+{
+"name": "이성수왕짬뽕순두부 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/OZ6IqtdDmAZhOV2ggHlvlg"
+},
+{
+"name": "금성삼겹살",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Anici4Sv0Od6wIS4nyMihw"
+},
+{
+"name": "한영식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4TJdbMDONhN5cE8VP8RUQ"
+},
+{
+"name": "동은성",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/anuFiLHpEJZ4YnYxwJnzRg"
+},
+{
+"name": "황박사왕족발보쌈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gBWhZ5flD7Lg5mIVIkv3MA"
+},
+{
+"name": "천구네",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CRTo1ymAeZx2hWPLkREvQ"
+},
+{
+"name": "토미야",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pPbFsfwb2JdH6sIkbvOxEQ"
+},
+{
+"name": "초가집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/RRAM8OPK4cVqeBpI7cspA"
+},
+{
+"name": "버기즈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/azeDRHOo8YDgvhOxZCAbAA"
+},
+{
+"name": "설천순대국밥 유성직영점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/igZQcVKJ5BZiWj57KuZw"
+},
+{
+"name": "진월당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KRDQZIPKOfMvMluelN8exQ"
+},
+{
+"name": "바로그집 상대점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CsFswUudjqPZw1gd7n3hg"
+},
+{
+"name": "미카사로",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/TT4zJFs6cI5tZTRrEIgSA"
+},
+{
+"name": "서울치킨",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FnlBiVWJTQqUYWglEfxgbg"
+},
+{
+"name": "와타요업",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9RUMjtbo82BfEcGwQKvgIg"
+},
+{
+"name": "모쿠요비",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/efmpeHePGLOVptV3J1OpA"
+},
+{
+"name": "돈까스정석",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wEreMeHzuHMCOO8NMueSjA"
+},
+{
+"name": "누오보나폴리 궁동점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CyO1wLN6SUPKPQNS8fdPA"
+},
+{
+"name": "모로미 둔산점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/WaxQU2iAnfw8OI8T5jVcxg"
+},
+{
+"name": "원조태평소국밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zfs2u0BA3Xo6g92iOkbQ7Q"
+},
+{
+"name": "비래옥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QgKm2Mpy4tXQe1mEjmoJQ"
+},
+{
+"name": "스웨이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CD3Prtoruv97HAZ8CoKLnQ"
+},
+{
+"name": "시오",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/gjvunrlYcx6GigGjjNvng"
+},
+{
+"name": "일당감자탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/P3X7MsR4QpHEdu9SAoSe8A"
+},
+{
+"name": "스바라시라멘 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CmjZejN2R11ZFrSMccI5Lw"
+},
+{
+"name": "갈마짬뽕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/JccPtKsUP0jwV7xWVszlDg"
+},
+{
+"name": "갓포호산",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/hAc5tHv7M2Z0arjGdVJmA"
+},
+{
+"name": "해프닝",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Eh7CXWh2ahcJG2Y4tAKUA"
+},
+{
+"name": "더몰트하우스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IZmM9NRTe9rz4fqlpdNA"
+},
+{
+"name": "페이크",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4JraypZLj52uNsf5UKe4cQ"
+},
+{
+"name": "시골길 내륙본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/haFH2Ut71f3sKNIihgICQ"
+},
+{
+"name": "도군함박",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uRo17IBGEw5OUFM3c0YkAg"
+},
+{
+"name": "킨토토소바",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/PuYB1FiUp1kp0ZFINQNsDQ"
+},
+{
+"name": "까치돌구이 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Syo1Cep7a7G60HsigV1AA"
+},
+{
+"name": "수정삼겹살",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/QZXHcjYsQIBE1lgtvWi6A"
+},
+{
+"name": "별미일번지",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/zGbEnTtf9tq2uX6fpArMrg"
+},
+{
+"name": "오리진",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Q03fmCck5ep1eX99iNnTxQ"
+},
+{
+"name": "포미",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/evjRV44gl5mylA9z3dBiw"
+},
+{
+"name": "명랑식당 월평점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Ah1iuw9XJpdsHi1fMMp7A"
+},
+{
+"name": "하누정",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/6TZJGHSyMsGJpdvqFwDYiw"
+},
+{
+"name": "오문창순대국밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/yCuirw7J4AmUYl1thTbw"
+},
+{
+"name": "갑동숯골냉면",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/nNUEeUTBDI1aip3EUVgQ6g"
+},
+{
+"name": "마시기통차 유성본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/z1vHjC9IT3IU9VwVaW4jA"
+},
+{
+"name": "제주오목돈",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ahD8Bq7qApaV8UqarIp0A"
+},
+{
+"name": "도프차일드키친",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CkRJtXxHvgQLjdSIExiLaQ"
+},
+{
+"name": "비바릴리 도안점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/G1IrVfztGFLetgfc28lvMw"
+},
+{
+"name": "진로집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/j6mzj55apbXtMOLs1PpseQ"
+},
+{
+"name": "선화별당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Y7ZBFsdezgdtZHbQ406yhg"
+},
+{
+"name": "청석골칡냉면식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/UIhRrtcilgJzCYZ2rX5AA"
+},
+{
+"name": "숯골원냉면 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/5MASw7hANJaf1Azc1XmTg"
+},
+{
+"name": "잇마이타이 봉명점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Wao6xWptMJ91qECjdPSxA"
+},
+{
+"name": "상무초밥 유성점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CBx7EmpSVMBSmOWjDTwnQ"
+},
+{
+"name": "뼈먹자",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/EzvpL4yFj16TgiOCbNmPBA"
+},
+{
+"name": "하바쿡",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lAmcXE5PCZBh4fz6yyR1xg"
+},
+{
+"name": "로얄라멘",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8BiTF1epU0eX8Lw8Y0ltA"
+},
+{
+"name": "요우란",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/g558yctwMpopE4e8nOe26w"
+},
+{
+"name": "재주초밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/c3nE7Sv6Obojl8QrvvNhlg"
+},
+{
+"name": "수안초밥",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/32B2FtfmtgbmLEXOA"
+},
+{
+"name": "바글바글김치찌개",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/oLuiqvqQVH73rUZ8RyzNrQ"
+},
+{
+"name": "겐로쿠우동 대전노은점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/CXakP5b5KdUtPdxUtgsw"
+},
+{
+"name": "천리집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Whw9s8WHkJQWGW9hbMQFUA"
+},
+{
+"name": "다소니카츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/a6S5WeYjpKwAkXhjwxbhjQ"
+},
+{
+"name": "뭉탱이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dbye8qGaXXwemRRJLFEyOA"
+},
+{
+"name": "심스스모크하우스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NX8Hz7jmlblbmwTm090hMw"
+},
+{
+"name": "중국관",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/F5T8KV8fVAk7Gh2O4M4MHQ"
+},
+{
+"name": "왕관식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/C0RTFlMkMfGcnx7P7vKCWQ"
+},
+{
+"name": "현암뚝방구이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/sWtXHFs0eXojL0RZARPU0Q"
+},
+{
+"name": "명랑칼국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/2xHyIkq5DE0Fgjg040LVXg"
+},
+{
+"name": "광천식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NqPhR0tf7ziOADlnHl9Ag"
+},
+{
+"name": "태화장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mTDlGOHENjpdKDrJjlz8g"
+},
+{
+"name": "희락반점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/VkmkUjqE0mwORzbUOVmVw"
+},
+{
+"name": "별난집",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/u4bHT0GoWtPPlarQ2Mt0zA"
+},
+{
+"name": "정동문화사",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ZbWVly5PpOFqwDPFjW7DEg"
+},
+{
+"name": "송림식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jXjFMzUbqm0h03IdsATog"
+},
+{
+"name": "두탭스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uYBliTaaPKG2PF0gwbV9Q"
+},
+{
+"name": "동천홍",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ehDNjm6usY8Ti2EdlnEAg"
+},
+{
+"name": "올리브팜베이커리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/NiWHksZvIBVHABgstAELw"
+},
+{
+"name": "형아짬뽕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/uAX3cugYuj9oAlMTa3dxHw"
+},
+{
+"name": "그레이토라멘",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/8oD2AEwTDwvV7hcWG16Efg"
+},
+{
+"name": "현대식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/DZlKngLxZXFCds94Oru2Jw"
+},
+{
+"name": "카츠고메이",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FFlNo78IA1OcKBaWQrLpkg"
+},
+{
+"name": "이관복명장냉면",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Vq8Np4ibh3Ty62yRXIZoQ"
+},
+{
+"name": "동방명주 동천홍2호점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/FV7VeeVFmF2fyrNoz0nEAw"
+},
+{
+"name": "권영철콩짬뽕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/lIWKIasInx1F2L6gTrgDmQ"
+},
+{
+"name": "손의손 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/84mENvgatird0fBalFFoog"
+},
+{
+"name": "필짬뽕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mkNrHkP7Hd4WX42w2M7Xg"
+},
+{
+"name": "초미당 세번째",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0I8WdzcvWTe1dTrazpHkzg"
+},
+{
+"name": "NTBR",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/wvDy7c0LCtGCkvSsGRFrpQ"
+},
+{
+"name": "에스에스에이더블유",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/65S70vm767blTq42KBsPOw"
+},
+{
+"name": "검상골",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/f5YVrcauyiPoLMx2pElw"
+},
+{
+"name": "콜드버터베이크샵 시청점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1Jzro2LoyBErliAnuSPLg"
+},
+{
+"name": "메온",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/65uaM9ElWCp8aujKH4MQ"
+},
+{
+"name": "김연수소국밥막국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1PvmecxPxSmYXykHY5Xd4Q"
+},
+{
+"name": "비래등",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/dEm3TV1TC1xDFyWWXR4Ow"
+},
+{
+"name": "우츠",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/j942k4O5lleTXqdkBpGA"
+},
+{
+"name": "모선식당",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/5WoaIXvjiGu4U1IVgsv0qw"
+},
+{
+"name": "타코갱",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/jdiQnSP9h3U8HWObq6qvJg"
+},
+{
+"name": "인디 둔산점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/fmmpXcqy7muXvVZk2lKSQ"
+},
+{
+"name": "투웨이버거 치폴레 괴정",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/krdIHGjJsinmw63r3OYng"
+},
+{
+"name": "투웨이버거 더레드",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ib7iq2ij3xuOdWrFhppklw"
+},
+{
+"name": "중부회수산시장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/l834y84sg1hRoja8N5dxcA"
+},
+{
+"name": "가장맛있는족발 대전송촌점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7uLsr2ByMdFWieGWqqqAyw"
+},
+{
+"name": "콜마르브레드",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/brddmIz4TmFaiDMFYoZw"
+},
+{
+"name": "광세족발 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/4TzIZle13dUTfUkOrfMv0A"
+},
+{
+"name": "광세족발 갈마점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/hq7IlC3uNd9HMHoD2CwWJw"
+},
+{
+"name": "구들마루 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/3ZwFIRPuv4rS1wKdH4Ew"
+},
+{
+"name": "마쯔리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/AChQY2vliD7fnWLew1C2w"
+},
+{
+"name": "마시내 대흥점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/u6lBWyeJwEeT2LUsdhtP5Q"
+},
+{
+"name": "마시내탕수육 유성본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/aGaUJOJCHErn70DCrDW0sw"
+},
+{
+"name": "베스타",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/B5VxCYnk5xY750G8z3blw"
+},
+{
+"name": "숯불닭구이 호연재 봉명본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/9R81RaUw2diXYzz4U0Euog"
+},
+{
+"name": "반티엔야오 카오위 대전점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Bv7Fvlnd1T61vWGwEKyJBg"
+},
+{
+"name": "소바우에무라",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/by3VNBVQqwAOtWLK85iIeA"
+},
+{
+"name": "커피맨션문장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/qndZDhR6H1k9O6xINuN4lQ"
+},
+{
+"name": "떡반집 본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/YKo9qYd2JxNKBNcKUt7VmQ"
+},
+{
+"name": "서원골유황오리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/1OX3okdfgeKVc939Z8CAPQ"
+},
+{
+"name": "소리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/Wmp3D7lNWLF3xCN9TJkQ"
+},
+{
+"name": "버거베이트 둔산시청점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/BL5S1y8MbZP8kbgaL3D48g"
+},
+{
+"name": "올래국수 상대본점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pYQrwIw4TOZ33luY8JYeZQ"
+},
+{
+"name": "나나히카리",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/A9rDbZJJooUXdFg1t72SGg"
+},
+{
+"name": "목동칼국수 목동점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/xptv5GZDVstHBSIq1uUdGA"
+},
+{
+"name": "마인네 하우스",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/IglgJZXEsKZr79JrSoNQqg"
+},
+{
+"name": "천개동농장",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/ep3syiMqkFjDgEE4qTt8qg"
+},
+{
+"name": "박선희황태어글탕 월평직영점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/PlVj3LgUgDc0FVZtL1l3QQ"
+},
+{
+"name": "장원가",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/mx9OauB6Lpdxk0a8rjPcg"
+},
+{
 "name": "차이나",
 "merUrl": "https://web.paybooc.ai/mer/web/profile/tCbDllLJecDrWP6xTja8w"
 },
@@ -449,6 +2533,34 @@
 {
 "name": "대성부대고기식당",
 "merUrl": "https://web.paybooc.ai/mer/web/profile/FP07dUOBj6Dt2rF4UwppQ"
+},
+{
+"name": "골목집 기흥점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/65bBmRmr6xwxKxbJaSRsMw"
+},
+{
+"name": "큰마당감자탕",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/DQE1Fuvg4EAE30Ikyd8aSw"
+},
+{
+"name": "터줏대감",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/KMVQFZw0kvBSIsJWCXuaPQ"
+},
+{
+"name": "마평통닭",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/0yP0JbAoSJwnQWqD4YCFQ"
+},
+{
+"name": "대덕골보쌈칼국수",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/pibfaGosGoRfYhl9mnHQ"
+},
+{
+"name": "용인조개구이무한리필",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/7Qk1s0n0HT43bFpWCKHA"
+},
+{
+"name": "삼동소바 상하점",
+"merUrl": "https://web.paybooc.ai/mer/web/profile/xZqgYBKAha6omdnbT0g"
 }
 ]
 }
