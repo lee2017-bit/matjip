@@ -406,7 +406,8 @@
       // 가게 이름이 아니라 질문처럼 보이면 '물어보기'로 이어 준다
       var asked = API && v.length >= 8 && /\s/.test(v) && /\?|뭐|추천|어디|좋은|맛집|먹을|먹지|갈까/.test(v);
       if (asked) {
-        var ask = el('a', 'ask-link', '"' + v + '" AI에게 물어보기 →'); ask.href = ROOT + 'ask.html#q=' + encodeURIComponent(v);
+        var ask = el('a', 'ask-link', '"' + v + '" AI에게 물어보기 →');
+        ask.href = document.getElementById('ask-form') ? '#ask=' + encodeURIComponent(v) : ROOT + 'ask.html#q=' + encodeURIComponent(v);
         results.appendChild(ask);
       }
       var toks = v.split(/\s+/).map(norm).filter(Boolean);

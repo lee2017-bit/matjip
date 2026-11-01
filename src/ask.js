@@ -239,6 +239,14 @@
   document.querySelectorAll('.ask-ex button').forEach(function (b) {
     b.addEventListener('click', function () { input.value = b.textContent; run(input.value, null); });
   });
-  var hq = /[#&]q=([^&]+)/.exec(location.hash);
-  if (hq) { try { input.value = decodeURIComponent(hq[1]); run(input.value, null); } catch (e) { /* ignore */ } }
+  // #ask=질문 (홈 검색창의 '물어보기' 링크), ask.html 은 #q=질문 도 (홈의 #q= 는 가게 이름 검색 공유 링크라 쓰지 않는다)
+  function fromHash() {
+    var m = /[#&]ask=([^&]+)/.exec(location.hash) || (!document.getElementById('q') && /[#&]q=([^&]+)/.exec(location.hash));
+    if (!m) return;
+    try { input.value = decodeURIComponent(m[1]); } catch (e) { return; }
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    run(input.value, null);
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
 })();

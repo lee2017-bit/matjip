@@ -195,3 +195,11 @@ details.more a.kakao::before{content:"🗺️ "}
 .card .why{margin:4px 0 6px;padding:8px 10px;border-radius:10px;background:var(--accent-soft);font-size:14px}
 .ask-more{margin:12px 0}
 .ask-more summary{cursor:pointer;color:var(--muted);font-size:14px}
+.ask-home h1{font-size:30px}
+.ask-home .ask-form textarea{font-size:17px}
+.home-score{margin-top:30px;padding-top:22px;border-top:1px solid var(--line)}
+.home-score h2{font-size:18px;margin:0 0 10px}
+.home-score #q{padding:12px 14px;font-size:16px}
+.near-big.alt{padding:14px 18px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
+.near-big.alt span{font-size:22px}
+.near-big.alt b{font-size:16px}

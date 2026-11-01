@@ -668,6 +668,22 @@ AGE_OPTS = [("", "모든 연령"), ("young", "20~30대 위주"), ("20", "20대")
 SEX_OPTS = [("", "모든 성별"), ("f", "여성 위주"), ("m", "남성 위주"), ("mix", "남녀 고루")]
 
 
+ASK_EXAMPLES = ["종로 점심 소개팅 어디가 좋을까?", "성수동 저녁 데이트", "을지로 기념일 저녁, 조용한 곳",
+                "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
+
+
+def ask_form(examples: list) -> str:
+    """'물어보기' 입력창 (홈·ask.html 공용, 동작은 assets/ask.js)."""
+    ex = "".join(f'<button type="button" class="chip ex">{esc(x)}</button>' for x in examples)
+    return f"""<form id="ask-form" class="ask-form" autocomplete="off">
+  <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 성수동 저녁 데이트, 어디 갈까?" aria-label="질문"></textarea>
+  <button type="submit" id="ask-go">물어보기</button>
+</form>
+<div class="ask-ex" aria-label="예시 질문">{ex}</div>
+<div id="ask-out" class="ask-out" aria-live="polite"></div>
+<p class="small-note sub">추천 이유는 AI가 쓴 글이라 틀릴 수 있어요.</p>"""
+
+
 def select_box(key: str, label: str, opts: list, default: str = "", el_id: str = "") -> str:
     sel = ' selected'
     o = "".join(f'<option value="{esc(k)}"{sel if k == default else ""}>{esc(v)}</option>' for k, v in opts)
@@ -960,21 +976,12 @@ def main():
 
     # ---- 물어보기 (Worker 의 /chat — Cloudflare Workers AI. 후보는 이 사이트 데이터에서만 고른다)
     if LOOKUP_API:
-        examples = ["종로 점심 소개팅 어디가 좋을까?", "성수동 저녁 데이트", "을지로 기념일 저녁, 조용한 곳",
-                    "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
-        ex = "".join(f'<button type="button" class="chip ex">{esc(x)}</button>' for x in examples)
         body = f"""
 <section class="hero small ask-hero">
   <h1>뭐 먹을지 <span>물어보기</span></h1>
   <p class="sub">장소·시간·상황을 말하면 골라 드려요</p>
 </section>
-<form id="ask-form" class="ask-form" autocomplete="off">
-  <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 딥스테이션에서 5시까지 다이빙하고 뭐 먹지?" aria-label="질문"></textarea>
-  <button type="submit" id="ask-go">물어보기</button>
-</form>
-<div class="ask-ex" aria-label="예시 질문">{ex}</div>
-<div id="ask-out" class="ask-out" aria-live="polite"></div>
-<p class="small-note sub">추천 이유는 AI가 쓴 글이라 틀릴 수 있어요.</p>"""
+{ask_form(ASK_EXAMPLES)}"""
         html_ask = page(f"뭐 먹을지 물어보기 — 상황 맞춤 맛집 추천 | {SITE_NAME}",
                         "장소·시간·상황을 말하면 근처 매출 상위 집과 주인장 픽 중에서 골라 주는 맛집 추천. BC카드 결제 데이터 기반.",
                         body, "ask.html", 0)
@@ -1037,7 +1044,22 @@ def main():
   <div id="results" class="results" aria-live="polite"></div>
   <div class="home-extra">
     <a class="near-big" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집</b></a>
-    {'<a class="home-more" href="ask.html">AI에게 물어보기 →</a>' if LOOKUP_API else ''}
+    <a class="home-more" href="areas.html">동네별 · 종류별 순위 보기 →</a>
+  </div>
+</section>"""
+    if LOOKUP_API:  # 메인은 '물어보기', 점수 검색은 그 아래 작게
+        body = f"""
+<section class="hero home ask-home">
+  <h1>오늘 뭐 <span>먹지?</span></h1>
+  <p class="sub">장소·시간·상황을 말하면 카드 매출 상위 집 중에서 골라 드려요</p>
+  {ask_form(ASK_EXAMPLES[:4])}
+</section>
+<section class="home-score" id="search">
+  <h2>그 집, 몇 점일까?</h2>
+  <input id="q" type="search" placeholder="가게 이름으로 매출점수 검색" aria-label="가게 이름으로 매출점수 검색" autocomplete="off">
+  <div id="results" class="results" aria-live="polite"></div>
+  <div class="home-extra">
+    <a class="near-big alt" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집 지도</b></a>
     <a class="home-more" href="areas.html">동네별 · 종류별 순위 보기 →</a>
   </div>
 </section>"""
@@ -1071,7 +1093,14 @@ def main():
                                          areas_body, "areas.html", 0))
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"
     desc = f"별점 말고 실제 결제 매출로 매긴 맛집 점수. {len(places):,}곳 검색, 한식·고기·일식 등 종류별 순위, 을지로·강남·여의도·판교 등 {len(built_areas)}개 동네 점심·회식 맛집."
-    (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
+    if LOOKUP_API:
+        title = f"{SITE_NAME} — 오늘 뭐 먹지? 상황 맞춤 맛집 추천과 맛집 매출점수 검색"
+        desc = f"장소·시간·상황을 말하면 카드 결제 매출 상위 집 중에서 골라 드려요. {len(places):,}곳 매출점수 검색, {len(built_areas)}개 동네·종류별 순위."
+    html_index = page(title, desc, body, "index.html", 0)
+    if LOOKUP_API:
+        js_tag = f'<script src="assets/app.js?v={ASSET_V}"></script>'
+        html_index = html_index.replace(js_tag, js_tag + f'\n<script src="assets/ask.js?v={ASSET_V}"></script>')
+    (OUT / "index.html").write_text(html_index)
 
     if BASE_URL:
         urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html", f"{BASE_URL}/taste.html", f"{BASE_URL}/areas.html"]
