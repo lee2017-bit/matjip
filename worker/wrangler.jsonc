@@ -1,0 +1,7 @@
+// Cloudflare Workers 설정 (대시보드에서 이 저장소를 연결할 때 Root directory = worker)
+{
+  "name": "matjip-lookup",
+  "main": "lookup.js",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": true
+}
