@@ -288,6 +288,15 @@ def age_tags(r: dict) -> str:
     return " ".join(sorted(tags))
 
 
+def sex_tag(r: dict) -> str:
+    """주 고객 1·2위 성별: 둘 다 여성 'f', 둘 다 남성 'm', 섞여 있으면 'mix'."""
+    cust = r.get("vistCstmrRnkList") or {}
+    g = ["f" if "여성" in (cust.get(k) or "") else "m" if "남성" in (cust.get(k) or "") else "" for k in ("rk01", "rk02")]
+    if "" in g:
+        return ""
+    return g[0] if g[0] == g[1] else "mix"
+
+
 def mer_id(url) -> str:
     return str(url or "").rstrip("/").rsplit("/", 1)[-1]
 
@@ -328,7 +337,7 @@ def card(r: dict, rank: int) -> str:
         notes.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
                      + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
     note = "".join(notes)
-    return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-c="{esc(city_of(r.get('merAddr')))}">
+    return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-c="{esc(city_of(r.get('merAddr')))}">
   <div class="card-head"><span class="rank">{rank}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
   <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
   <p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
@@ -382,7 +391,12 @@ AGE_NAV = ('<nav class="filters" data-key="a" aria-label="주 고객">'
            '<button type="button" data-v="20">20대</button>'
            '<button type="button" data-v="30">30대</button>'
            '<button type="button" data-v="40">40대</button>'
-           '<button type="button" data-v="50">50대 이상</button></nav>')
+           '<button type="button" data-v="50">50대 이상</button></nav>'
+           '<nav class="filters" data-key="s" aria-label="주 고객 성별">'
+           '<button type="button" data-v="" class="on">모든 성별</button>'
+           '<button type="button" data-v="f">여성 손님 위주</button>'
+           '<button type="button" data-v="m">남성 손님 위주</button>'
+           '<button type="button" data-v="mix">남녀 고루</button></nav>')
 
 
 def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal") -> str:
@@ -610,7 +624,7 @@ def main():
   <ul>
     <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 96점, 1%면 89점, 10%면 77점, 40%면 61점 정도예요.</li>
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
-    <li><strong>손님 연령 필터</strong> — 결제 고객 중 많은 연령·성별 1·2위를 기준으로 걸러요. "20~30대가 많이 가는 곳"은 1·2위가 모두 20~30대인 곳(전체의 약 38%)이에요.</li>
+    <li><strong>손님 연령 필터</strong> — 결제 고객 중 많은 연령·성별 1·2위를 기준으로 걸러요. "20~30대가 많이 가는 곳"은 1·2위가 모두 20~30대인 곳(전체의 약 38%)이에요. 성별도 같은 방식으로, 1·2위가 모두 여성이면 "여성 손님 위주"(약 20%), 모두 남성이면 "남성 손님 위주"(약 44%), 섞여 있으면 "남녀 고루"예요.</li>
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
     <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
     <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 포함해요. <a href="talk.html">모아 보기</a></li>
