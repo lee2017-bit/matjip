@@ -57,3 +57,21 @@
   도메인을 바꾸면 Worker의 Settings → Variables and Secrets에 `ALLOW_ORIGIN` (Text)을 새 주소로 추가하세요.
 - 같은 검색어는 하루 동안 캐시하도록 만들었지만, `workers.dev` 주소에서는 Cloudflare 캐시가 제한될 수 있습니다.
 - 실시간 조회를 끄려면 GitHub Variable `LOOKUP_API` 를 지우고 Run workflow 하면 됩니다.
+
+---
+
+## 물어보기 (AI 채팅, Cloudflare Workers AI)
+
+`ask.html` — "딥스테이션에서 5시까지 다이빙하고 뭐 먹지?"처럼 물으면 근처 가게 중에서 골라 줍니다.
+**API 키는 필요 없습니다.** 같은 Worker에 Workers AI 바인딩(`worker/wrangler.jsonc` 의 `"ai": {"binding": "AI"}`)만 있으면
+main에 푸시할 때 Cloudflare가 함께 배포합니다.
+
+- 비용: Workers Free 플랜은 Workers AI **하루 10,000 뉴런 무료**(UTC 0시 초기화). 넘으면 요금이 나가는 대신 그날은 "오늘 AI 무료 사용량을 다 썼어요"가 뜹니다.
+  질문 1개 ≈ 30~60 뉴런이라 하루 150~300개 질문 정도입니다. (Workers Paid로 올리면 초과분이 과금되니 무료 플랜을 유지하세요.)
+- 모델: `@cf/google/gemma-4-26b-a4b-it` (실패하면 `@cf/qwen/qwen3-30b-a3b-fp8`). `worker/chat.js` 의 `MODELS`.
+- 흐름: ① AI가 질문에서 장소·식사 시각·원하는 음식을 뽑고 Worker가 카카오 장소 검색(k-skill 프록시)으로 좌표를 찾음
+  ② 사이트가 저장 데이터(주인장 픽·취향 포함)와 그 근처 실시간 eat.pl 가게로 후보 18곳을 만듦(영업시간·프랜차이즈·종류로 거름)
+  ③ AI가 후보 번호만 골라 이유를 씀 ④ 카드와 eat.pl 링크는 사이트가 데이터 그대로 그림 — AI가 가게나 링크를 지어낼 수 없습니다.
+- 남용 방지: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 30개, 질문 200자, 후보 20곳 제한, 같은 질문은 캐시.
+- 질문 내용은 저장하지 않습니다 (Cloudflare 로그에 오류 메시지만 남음).
+- 끄려면 `worker/wrangler.jsonc` 에서 `ai` 줄을 지우면 됩니다 (물어보기 화면은 "AI 설정이 아직 안 되어 있어요"를 보여 줌).

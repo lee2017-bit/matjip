@@ -5,6 +5,7 @@
 //   GET https://<이름>.<계정>.workers.dev/?lat=37.56&lng=126.97   (지도 '내 위치')
 //   → 좌표와 주변(약 450m) 지점의 동 이름을 찾고(k-skill 프록시의 카카오 좌표→주소) 최대 4개 동의 eat.pl 매출 상위 가게를 돌려준다.
 //   모든 가게에 WGS84 위경도(lat, lng)를 붙여 준다.
+//   POST https://<이름>.<계정>.workers.dev/chat   ('물어보기', Workers AI 무료 할당량 사용 — chat.js 참고)
 //
 // 설정 (선택, Cloudflare 대시보드 → Worker → Settings → Variables and Secrets):
 //   ALLOW_ORIGIN  (Text)  기본값 https://lee2017-bit.github.io
@@ -13,6 +14,8 @@
 // 받은 주소를 그대로 돌려줄 뿐이다 (공모전 규칙: 서버에서 merUrl 직접 호출 금지).
 // 방문자 한 명이 버튼을 눌렀을 때 한 번(최대 3번) 조회하는 개인 검색 용도로만 쓴다.
 
+import { chat } from './chat.js';
+
 const PROXY = 'https://k-skill-proxy.nomadamas.org/v1/bccard-eatpl/search';
 const COORD2ADDR = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/coord2address';
 const CACHE_TTL = 24 * 3600;
@@ -20,8 +23,13 @@ const CACHE_TTL = 24 * 3600;
 export default {
   async fetch(request, env, ctx) {
     const origin = env.ALLOW_ORIGIN || 'https://lee2017-bit.github.io';
-    const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Vary': 'Origin' };
+    const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' };
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+    if (new URL(request.url).pathname === '/chat') {
+      if (request.method !== 'POST') return json({ message: 'POST only' }, 405, cors);
+      return chat(request, env, ctx, cors);
+    }
     if (request.method !== 'GET') return json({ message: 'GET only' }, 405, cors);
 
     const params = new URL(request.url).searchParams;
@@ -35,7 +43,6 @@ export default {
     const hit = await cache.match(cacheKey);
     if (hit) return withHeaders(hit, cors);
 
-    // 시도 순서: ① 전체를 가게 이름으로 ② "동네 가게" → 마지막 단어를 이름, 앞을 지역으로 ③ "가게 동네" → 첫 단어를 이름
     // 시도 순서: ① 전체를 이름으로 ② 업종 말을 뗀 이름('농민백암순대' → '농민백암', eat.pl 등록 이름이 다를 때가 많다)
     // ③ "동네 가게" → 마지막 단어를 이름 ④ "가게 동네" → 첫 단어를 이름. 결과가 나오면 멈춘다.
     const tries = [{ name: q, location: '' }];
@@ -71,7 +78,7 @@ export default {
 async function near(lat, lng, cors, ctx) {
   if (lat < 33 || lat > 39 || lng < 124 || lng > 132) return json({ results: [], message: '국내 위치만 찾을 수 있어요.' }, 400, cors);
   const cache = caches.default;
-  const key = new Request('https://cache.matjip/near2/' + lat.toFixed(3) + ',' + lng.toFixed(3));  // 약 100m 격자
+  const key = new Request('https://cache.matjip/near3/' + lat.toFixed(3) + ',' + lng.toFixed(3));  // 약 100m 격자
   const hit = await cache.match(key);
   if (hit) return withHeaders(hit, cors);
   // 가운데 + 동서남북 약 450m 지점의 동 이름을 모아 최대 4개 동을 조회한다 (화면 가장자리까지 채우기)
@@ -98,7 +105,9 @@ async function dongAt(lat, lng) {
     const r = await fetch(COORD2ADDR + '?x=' + lng.toFixed(6) + '&y=' + lat.toFixed(6), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
     if (!r.ok) return '';
     const a = ((((await r.json()).documents || [])[0] || {}).address) || {};
-    return [a.region_2depth_name, a.region_3depth_name].filter(Boolean).join(' ');
+    // 읍·면 지역은 '포곡읍 마성리'처럼 리까지 오는데, eat.pl 은 '리' 단위로는 못 찾는다 → '처인구 포곡읍'
+    const d3 = String(a.region_3depth_name || '').split(' ').filter(w => !/리$/.test(w) || w.length < 2).join(' ');
+    return [a.region_2depth_name, d3].filter(Boolean).join(' ');
   } catch (e) { return ''; }
 }
 

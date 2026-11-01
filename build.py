@@ -284,6 +284,13 @@ def open_for_lunch(srt: str, end: str) -> bool:
     return srt <= "1130" and end >= "1300"
 
 
+def open_at(srt: str, end: str, t: str) -> bool:
+    """t(HHMM)에 영업 중인지. 결제 시각을 모르면 True (모르는 가게를 빼지 않는다)."""
+    if not re.fullmatch(r"\d{4}", srt or "") or not re.fullmatch(r"\d{4}", end or ""):
+        return True
+    return (t >= srt or t <= end) if end < srt else srt <= t <= end
+
+
 def short_addr(a) -> str:
     a = re.sub(r"\(.*?\)", "", str(a or "")).split(",")[0]
     return re.sub(r"\s+", " ", a).strip()
@@ -626,7 +633,7 @@ def group_chips(present: set, default: str = "meal") -> str:
     return "".join(f'<button type="button" data-v="{k}"{on if k == default else ""}>{n}</button>' for k, n in chips)
 
 
-ASSET_V = ""  # main() 에서 style.css·app.js·map.js 내용으로 정한다 (휴대폰 캐시에 옛 화면이 남지 않게)
+ASSET_V = ""  # main() 에서 style.css·app.js·map.js·ask.js 내용으로 정한다 (휴대폰 캐시에 옛 화면이 남지 않게)
 
 
 def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
@@ -648,7 +655,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 </head><body data-root="{up}"{f' data-api="{esc(LOOKUP_API)}"' if LOOKUP_API else ''}>
 <div id="inapp" class="inapp" hidden></div>
 <header class="top"><a class="brand" href="{up}index.html">{SITE_NAME}</a><span class="tagline">{TAGLINE}</span>
-<nav class="topnav"><a href="{up}map.html">지도</a><a href="{up}areas.html">동네별</a></nav></header>
+<nav class="topnav"><a href="{up}map.html">지도</a><a href="{up}areas.html">동네별</a>{f'<a href="{up}ask.html">물어보기</a>' if LOOKUP_API else ''}</nav></header>
 <main>{body}</main>
 <footer>
 <p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong>. 매출점수는 최근 1개월 같은 업종 매출 순위를 0~100점으로 바꾼 값으로, 맛 평가가 아니에요. 영업시간은 결제 시각으로 추정한 값이에요.</p>
@@ -706,9 +713,9 @@ def main():
     for d in ("area", "cat", "assets"):
         (OUT / d).mkdir(exist_ok=True)
     global ASSET_V
-    for f in ("style.css", "app.js", "map.js"):
+    for f in ("style.css", "app.js", "map.js", "ask.js"):
         (OUT / "assets" / f).write_text((SRC / f).read_text())
-    ASSET_V = hashlib.md5("".join((SRC / f).read_text() for f in ("style.css", "app.js", "map.js")).encode()).hexdigest()[:8]
+    ASSET_V = hashlib.md5("".join((SRC / f).read_text() for f in ("style.css", "app.js", "map.js", "ask.js")).encode()).hexdigest()[:8]
     if (SRC / "og.png").exists():
         (OUT / "assets" / "og.png").write_bytes((SRC / "og.png").read_bytes())
 
@@ -955,10 +962,35 @@ def main():
                                 f'<script src="assets/map.js?v={ASSET_V}"></script>')
     (OUT / "map.html").write_text(html_map)
 
+    # ---- 물어보기 (Worker 의 /chat — Cloudflare Workers AI. 후보는 이 사이트 데이터에서만 고른다)
+    if LOOKUP_API:
+        examples = ["딥스테이션에서 5시까지 다이빙하고 뭐 먹지?", "성수동에서 조용히 대화하기 좋은 저녁",
+                    "강남역 근처 회식하기 좋은 고깃집", "판교역 점심 혼밥"]
+        ex = "".join(f'<button type="button" class="chip ex">{esc(x)}</button>' for x in examples)
+        body = f"""
+<section class="hero small ask-hero">
+  <h1>뭐 먹을지 <span>물어보기</span></h1>
+  <p class="sub">장소·시간·상황을 말하면 근처 매출 상위 집과 주인장 픽 중에서 골라 드려요</p>
+</section>
+<form id="ask-form" class="ask-form" autocomplete="off">
+  <textarea id="ask-q" rows="2" maxlength="200" placeholder="예) 딥스테이션에서 5시까지 다이빙하고 뭐 먹지?" aria-label="질문"></textarea>
+  <button type="submit" id="ask-go">물어보기</button>
+</form>
+<div class="ask-ex" aria-label="예시 질문">{ex}</div>
+<div id="ask-out" class="ask-out" aria-live="polite"></div>
+<p class="small-note sub">AI(Cloudflare Workers AI)가 질문을 읽고 <strong>이 사이트의 가게 목록 안에서만</strong> 골라요. 점수·링크는 데이터 그대로이고,
+추천 이유는 AI가 쓴 글이라 틀릴 수 있어요. 질문은 저장하지 않으며, 하루에 물어볼 수 있는 횟수에 제한이 있어요.</p>"""
+        html_ask = page(f"뭐 먹을지 물어보기 — 상황 맞춤 맛집 추천 | {SITE_NAME}",
+                        "장소·시간·상황을 말하면 근처 매출 상위 집과 주인장 픽 중에서 골라 주는 맛집 추천. BC카드 결제 데이터 기반.",
+                        body, "ask.html", 0)
+        html_ask = html_ask.replace(js_tag, js_tag + f'\n<script src="assets/ask.js?v={ASSET_V}"></script>')
+        (OUT / "ask.html").write_text(html_ask)
+
     # ---- search index (loaded lazily by the home page search box)
     # 압축 형식 (v2): [이름, 업종번호, 주소, 점수, 전국%, 구%, eat.pl id, 동네번호(-1), 플래그, 위도, 경도]
     # 플래그 비트: 1 주인장 픽, 2 아주 붐빔, 4 대화하기 좋은 곳, 8 고급 추정, 16 회식 적합, 32 프랜차이즈, 64 주인장 취향,
-    # 128 20~30대 위주, 256/512/1024/2048 주 고객 20·30·40·50대+, 4096 여성 위주, 8192 남성 위주, 16384 남녀 고루. app.js load()가 풀어 쓴다.
+    # 128 20~30대 위주, 256/512/1024/2048 주 고객 20·30·40·50대+, 4096 여성 위주, 8192 남성 위주, 16384 남녀 고루,
+    # 32768/65536/131072/262144 09:00·12:30·18:30·22:30 영업(결제 시각 기준, 모르면 모두 켬). app.js load()가 풀어 쓴다.
     label = lambda r: r.get("_catlabel") or r.get("merTpbuzNm") or ""
     cat_group = {}
     for r in ranked:
@@ -975,7 +1007,9 @@ def main():
                 | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0) | (64 if r.get("_taste") else 0)
                 | sum(bit for tag, bit in (("young", 128), ("20", 256), ("30", 512), ("40", 1024), ("50", 2048))
                       if tag in age_tags(r).split())
-                | {"f": 4096, "m": 8192, "mix": 16384}.get(sex_tag(r), 0))
+                | {"f": 4096, "m": 8192, "mix": 16384}.get(sex_tag(r), 0)
+                | sum(bit for t, bit in (("0900", 32768), ("1230", 65536), ("1830", 131072), ("2230", 262144))
+                      if open_at(r.get("srtTime") or "", r.get("endTime") or "", t)))
 
     def pos(r):
         ll = latlng(r)
@@ -1008,6 +1042,7 @@ def main():
   <div id="results" class="results" aria-live="polite"></div>
   <div class="home-extra">
     <a class="near-big" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집</b><small>지금 위치 근처 매출 상위 집을 지도로</small></a>
+    {'<a class="home-more" href="ask.html">상황을 말하면 골라 드려요 · AI에게 물어보기 →</a>' if LOOKUP_API else ''}
     <a class="home-more" href="areas.html">동네별 · 종류별 순위 보기 →</a>
   </div>
 </section>"""
@@ -1047,6 +1082,7 @@ def main():
 
     if BASE_URL:
         urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html", f"{BASE_URL}/taste.html", f"{BASE_URL}/areas.html"]
+                + ([f"{BASE_URL}/ask.html"] if LOOKUP_API else [])
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)

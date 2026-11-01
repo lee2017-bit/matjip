@@ -402,6 +402,13 @@
     if (v.length < 2) return;
     load().then(function (d) {
       if (q.value.trim() !== v) return;
+      results.innerHTML = '';
+      // 가게 이름이 아니라 질문처럼 보이면 '물어보기'로 이어 준다
+      var asked = API && v.length >= 8 && /\s/.test(v) && /\?|뭐|추천|어디|좋은|맛집|먹을|먹지|갈까/.test(v);
+      if (asked) {
+        var ask = el('a', 'ask-link', '"' + v + '" AI에게 물어보기 →'); ask.href = ROOT + 'ask.html#q=' + encodeURIComponent(v);
+        results.appendChild(ask);
+      }
       var toks = v.split(/\s+/).map(norm).filter(Boolean);
       var whole = norm(v);
       // '농민백암순대'처럼 업종 말이 붙은 이름은 '농민백암'으로도 찾는다 (eat.pl 등록 이름이 다를 때가 많다)
@@ -414,17 +421,16 @@
         var rb = b.n === whole ? 0 : b.n.indexOf(whole) === 0 ? 1 : b.n.indexOf(whole) !== -1 ? 2 : 3;
         return ra - rb || b[4] - a[4];
       });
-      results.innerHTML = '';
       var nameHit = hits.length && hits[0].n.indexOf(whole) !== -1;
       if (hits.length) {
         results.appendChild(el('p', 'count', hits.length > 30 ? '검색 결과 ' + hits.length + '곳 중 매출점수 상위 30곳' : '검색 결과 ' + hits.length + '곳'));
         var ul = el('ol', 'list');
         hits.slice(0, 30).forEach(function (p) { ul.appendChild(placeCard(fromIndex(p))); });
         results.appendChild(ul);
-      } else {
+      } else if (!asked) {
         results.appendChild(el('p', 'count', '모아 둔 ' + d.places.length.toLocaleString() + '곳 중에는 없어요.'));
       }
-      if (!nameHit) liveButton(v, results);
+      if (!nameHit && !asked) liveButton(v, results);
     });
   }
   if (q) {
@@ -504,7 +510,8 @@
   // shared helpers for map.js
   window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
     isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, isChainName: isChainName,
-    bindToggles: bindToggles, toggleValues: toggleValues, custTags: custTags, isTaste: isTaste, data: function () { return data; } };
+    bindToggles: bindToggles, toggleValues: toggleValues, custTags: custTags, isTaste: isTaste, catGroupOf: catGroupOf, share: share,
+    data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path

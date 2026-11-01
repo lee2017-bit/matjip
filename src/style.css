@@ -173,3 +173,25 @@ footer p{margin:4px 0}
 .selects select.set{border-color:var(--fg);font-weight:700}
 details.more a.kakao{color:var(--fg);font-weight:600}
 details.more a.kakao::before{content:"🗺️ "}
+
+/* 물어보기 */
+.ask-link{display:block;margin:8px 0 4px;padding:12px 14px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:700;text-decoration:none}
+.ask-form{display:flex;gap:8px;align-items:stretch}
+.ask-form textarea{flex:1;min-width:0;padding:12px 14px;font:inherit;font-size:16px;line-height:1.45;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);outline:none;resize:vertical}
+.ask-form textarea:focus{border-color:var(--accent)}
+.ask-form button{flex:none;padding:0 18px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700}
+.ask-form button:disabled{opacity:.5}
+.ask-ex{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.ask-ex .chip{border:0;font-size:13px;color:var(--muted)}
+.ask-out{margin:14px 0}
+.ask-status{color:var(--muted);font-size:14px}
+.ask-status::before{content:"";display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%;background:var(--accent);animation:askpulse 1s ease-in-out infinite alternate;vertical-align:middle}
+@keyframes askpulse{from{opacity:.25}to{opacity:1}}
+.ask-q-line{margin:0 0 8px;font-weight:700}
+.ask-q-line::before{content:"Q. ";color:var(--accent)}
+.ask-answer{padding:14px 16px;border-radius:14px;background:var(--chip);margin-bottom:12px}
+.ask-answer .a{margin:0 0 6px}
+.ask-meta{margin:0;color:var(--muted);font-size:13px}
+.card .why{margin:4px 0 6px;padding:8px 10px;border-radius:10px;background:var(--accent-soft);font-size:14px}
+.ask-more{margin:12px 0}
+.ask-more summary{cursor:pointer;color:var(--muted);font-size:14px}

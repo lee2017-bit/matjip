@@ -3,5 +3,7 @@
   "name": "matjip-lookup",
   "main": "lookup.js",
   "compatibility_date": "2025-09-01",
-  "workers_dev": true
+  "workers_dev": true,
+  // '물어보기'용 Workers AI (Free 플랜은 하루 10,000 뉴런 무료, 넘으면 과금 없이 오류)
+  "ai": { "binding": "AI" }
 }
