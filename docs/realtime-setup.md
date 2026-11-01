@@ -1,5 +1,7 @@
 # 실시간 조회 켜기 (선택)
 
+> **현재 상태:** 켜져 있음 — `https://matjip-lookup.jaewon-lee2017.workers.dev` (Cloudflare가 이 저장소 main의 `worker/` 폴더를 자동 배포, 주소는 `.github/workflows/pages.yml` 기본값)
+
 지금 사이트는 미리 모아 둔 가게들 안에서만 검색합니다. 아래 2단계를 마치면 목록에 없는 가게도
 "실시간으로 찾아보기" 버튼으로 바로 매출점수를 볼 수 있습니다.
 
@@ -20,8 +22,11 @@
    도메인을 추가하라는 화면이 나오면 건너뜁니다.
 2. 왼쪽 메뉴 **Workers & Pages**(또는 Compute → Workers) → **Create** → **Create Worker**
    (Hello World 템플릿) → 이름을 `matjip-lookup` 으로 바꾸고 **Deploy**
-3. **Edit code** → 왼쪽 코드를 전부 지우고 아래 파일 내용을 통째로 붙여 넣은 뒤 오른쪽 위 **Deploy**
-   - <https://raw.githubusercontent.com/lee2017-bit/matjip/main/worker/lookup.js>
+3. 코드 넣기 (둘 중 하나)
+   - **추천 (휴대폰도 가능):** Worker → **Settings** → **Build** → Git repository **Connect** → GitHub `lee2017-bit/matjip`,
+     Branch `main`, **Advanced settings → Root directory `worker`**, Deploy command `npx wrangler deploy` → Connect.
+     이후 main의 `worker/` 가 바뀌면 자동 재배포됩니다.
+   - PC: **Edit code** → 코드를 전부 지우고 <https://raw.githubusercontent.com/lee2017-bit/matjip/main/worker/lookup.js> 내용을 붙여 넣고 **Deploy**
 4. Worker 주소를 확인합니다: `https://matjip-lookup.<계정이름>.workers.dev`
 5. 브라우저에서 `https://matjip-lookup.<계정이름>.workers.dev/?q=진주회관` 을 열어
    `"merUrl"` 이 들어 있는 결과가 보이면 성공입니다.

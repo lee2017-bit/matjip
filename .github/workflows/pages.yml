@@ -23,7 +23,7 @@ jobs:
       - name: Build (full refresh on the weekly schedule, cached data otherwise)
         env:
           BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-          LOOKUP_API: ${{ vars.LOOKUP_API }}
+          LOOKUP_API: ${{ vars.LOOKUP_API || 'https://matjip-lookup.jaewon-lee2017.workers.dev' }}
         run: python3 build.py ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--refresh' || '' }}
       - name: Save refreshed data
         if: github.event_name != 'push'
