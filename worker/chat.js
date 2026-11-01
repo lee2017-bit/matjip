@@ -14,7 +14,7 @@
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
 const DAILY_LIMIT = { parse: 30, answer: 40 };
-const PROMPT_V = 'v3';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+const PROMPT_V = 'v4';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -95,7 +95,7 @@ async function parse(env, q) {
   };
   let place = null;
   if (intent.place) place = await findPlace(intent.place + (intent.area ? ' ' + intent.area : ''), intent.place) || (intent.area ? await findPlace(intent.place, intent.place) : null);
-  if (!place && intent.area) place = await findPlace(intent.area, intent.area);
+  if (!place && intent.area) place = await findPlace(intent.area, intent.area, true);
   return { intent, place };
 }
 
@@ -157,14 +157,22 @@ function toJson(r) {
   try { return JSON.parse(s.replace(/,\s*([}\]])/g, '$1')); } catch (e) { return null; }
 }
 
-async function findPlace(query, want) {
+// 장소 이름 → 좌표. 동네 이름(area)은 '성수동갈비골목' 같은 한 장소 대신 검색 결과들의 가운데(중앙값)를 쓴다
+async function findPlace(query, want, area) {
   try {
-    const r = await fetch(KAKAO_KEYWORD + '?size=5&query=' + encodeURIComponent(query), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
+    const r = await fetch(KAKAO_KEYWORD + '?size=' + (area ? 10 : 5) + '&query=' + encodeURIComponent(query), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
     if (!r.ok) return null;
-    const docs = ((await r.json()).documents || []).filter(d => +d.y > 33 && +d.y < 39 && +d.x > 124 && +d.x < 132);
+    const j = await r.json();
+    const docs = (j.documents || []).filter(d => +d.y > 33 && +d.y < 39 && +d.x > 124 && +d.x < 132);
     if (!docs.length) return null;
     const w = norm(want);
-    const d = docs.find(x => norm(x.place_name) === w) || docs.find(x => norm(x.place_name).indexOf(w) === 0) || docs[0];
+    const exact = docs.find(x => norm(x.place_name) === w) || (!area && docs.find(x => norm(x.place_name).indexOf(w) === 0));
+    if (area && !exact) {
+      const mid = a => a.sort((x, y) => x - y)[a.length >> 1];
+      const region = ((j.meta || {}).same_name || {}).selected_region || '';
+      return { name: want, addr: region, lat: +mid(docs.map(d => +d.y)).toFixed(5), lng: +mid(docs.map(d => +d.x)).toFixed(5) };
+    }
+    const d = exact || docs[0];
     return { name: d.place_name, addr: d.road_address_name || d.address_name || '', lat: +(+d.y).toFixed(5), lng: +(+d.x).toFixed(5) };
   } catch (e) { return null; }
 }

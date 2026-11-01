@@ -97,8 +97,8 @@
     var radius = [1000, 2000, 3500, 6000, 9000, 12000].filter(function (r) {
       return ok.filter(function (p) { return p.d <= r; }).length >= 14;
     })[0] || 12000;
-    // 주인장 픽은 조금 멀어도(반경의 3배, 6~12km) 후보에 넣는다 — 주인장이 그 동네에서 직접 모아 둔 집이라서
-    var pickR = Math.min(Math.max(radius * 3, 6000), 12000);
+    // 주인장 픽은 조금 멀어도(반경의 3배: 도심 3km, 교외 6km 안팎) 후보에 넣는다 — 주인장이 그 동네에서 직접 모아 둔 집이라서
+    var pickR = Math.min(Math.max(radius * 3, 2000), 12000);
     ok = ok.filter(function (p) { return p.d <= radius || (p.pick && p.d <= pickR); });
     ok.forEach(function (p) {
       var r = p.score + (p.pick ? 14 : 0) + (p.taste ? 8 : 0) - 10 * p.d / (p.pick ? pickR : radius);
