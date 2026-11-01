@@ -67,7 +67,10 @@
       var hadCorp = /\(주\)|㈜|주식회사/.test(x);
       x = x.replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g, ' ');
       var m = /\(([^)]{2,})\)\s*$/.exec(x);
-      if (m && hadCorp) x = m[1];
+      if (m && hadCorp) {  // 괄호 안이 지점·지역 이름뿐이면 회사명이 곧 가게 이름 (build.py clean_name 과 같은 규칙)
+        var inner = m[1].trim(), base = x.slice(0, m.index).trim();
+        x = base && (/^\S{1,4}(점|지점|호점|직영점)$/.test(inner) || inner === '카페' || inner === '식당') ? base + (/점$/.test(inner) ? ' ' + inner : '') : inner;
+      }
       return x.replace(/\s+/g, ' ').trim();
     }).filter(Boolean);
     if (!parts.length) return String(n || '');

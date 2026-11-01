@@ -1,3 +1,5 @@
+import { DurableObject } from 'cloudflare:workers';
+
 // 매출맛집 '물어보기' — Cloudflare Workers AI(무료 할당량)로 질문을 읽고 후보 가게 중에서 골라 준다.
 //
 //   POST /chat {"step":"parse","q":"딥스테이션에서 5시까지 다이빙하고 뭐 먹지?"}
@@ -9,7 +11,7 @@
 //     가게 링크(merUrl)는 사이트가 데이터 그대로 붙인다 (AI가 링크·가게를 지어낼 수 없게).
 //
 // 비용: Workers Free 플랜은 Workers AI 하루 10,000 뉴런 무료, 넘으면 과금 없이 오류만 난다 (질문 1개 ≈ 30~60 뉴런).
-// 남용 막기: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 수 제한, 질문 200자·후보 20곳 제한, 같은 질문은 2일 캐시.
+// 남용 막기: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 수 제한, 질문 200자·후보 20곳 제한, 같은 질문은 2일 캐시 (ChatStore).
 
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
@@ -60,15 +62,19 @@ export async function chat(request, env, ctx, cors) {
   const q = String(body.q || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (q.length < 4) return json({ message: '조금 더 자세히 물어봐 주세요.' }, 400, cors);
 
-  const cache = caches.default;
+  // 캐시·하루 횟수는 Durable Object(STORE)에 둔다 — workers.dev 주소에서는 Cache API가 동작하지 않는다.
   // 띄어쓰기·문장부호만 다른 질문은 같은 질문으로 본다
+  const store = env.STORE ? env.STORE.get(env.STORE.idFromName('v1')) : null;
   const qk = q.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
-  const key = new Request('https://cache.matjip/chat/' + PROMPT_V + '/' + step + '/' + await sha(step === 'parse' ? qk : JSON.stringify([qk, body.place && body.place.name, (body.cands || []).map(c => c && c.n)])));
-  const hit = await cache.match(key);
-  if (hit) return withHeaders(hit, cors);
-
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (await overLimit(cache, ctx, ip, step)) return json({ message: '오늘 물어볼 수 있는 횟수를 다 썼어요. 내일 다시 물어봐 주세요.' }, 429, cors);
+  const key = PROMPT_V + '/' + step + '/' + await sha(step === 'parse' ? qk : JSON.stringify([qk, body.place && body.place.name, (body.cands || []).map(c => c && c.n)]));
+  if (store) {
+    const hit = await store.getCache(key).catch(() => null);
+    if (hit) return new Response(hit, { headers: { 'Content-Type': 'application/json; charset=utf-8', ...cors } });
+    const day = new Date().toISOString().slice(0, 10);
+    const who = await sha(day + '|' + (request.headers.get('CF-Connecting-IP') || 'unknown'));  // IP는 그대로 저장하지 않는다
+    const ok = await store.hit(day + '/' + step + '/' + who, DAILY_LIMIT[step]).catch(() => true);
+    if (!ok) return json({ message: '오늘 물어볼 수 있는 횟수를 다 썼어요. 내일 다시 물어봐 주세요.' }, 429, cors);
+  }
 
   let out;
   try {
@@ -79,11 +85,38 @@ export async function chat(request, env, ctx, cors) {
     const quota = /4006|neuron|quota|limit|capacity/i.test(msg);
     return json({ message: quota ? '오늘 AI 무료 사용량을 다 썼어요. 내일 다시 물어봐 주세요.' : 'AI가 지금 답하지 못했어요. 잠시 뒤 다시 물어봐 주세요.' }, 503, cors);
   }
-  const res = json(out, 200, cors);
-  ctx.waitUntil(cache.put(key, new Response(JSON.stringify(out), {
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'max-age=' + 2 * 86400 },  // 2일
-  })));
-  return res;
+  if (store) ctx.waitUntil(store.setCache(key, JSON.stringify(out), 2 * 86400).catch(() => {}));  // 2일
+  return json(out, 200, cors);
+}
+
+// 질문 캐시(2일)와 하루 질문 수를 세는 저장소. Workers Free 플랜의 SQLite Durable Object 하나로 충분하다.
+// 매일 한 번 알람으로 지난 날짜의 횟수와 만료된 캐시를 지운다.
+export class ChatStore extends DurableObject {
+  async hit(key, limit) {
+    const k = 'rl:' + key, n = (await this.ctx.storage.get(k)) || 0;
+    if (n >= limit) return false;
+    await this.ctx.storage.put(k, n + 1);
+    await this.schedule();
+    return true;
+  }
+  async getCache(key) {
+    const v = await this.ctx.storage.get('c:' + key);
+    return v && v.exp > Date.now() ? v.body : null;
+  }
+  async setCache(key, body, ttl) {
+    await this.ctx.storage.put('c:' + key, { body, exp: Date.now() + ttl * 1000 });
+    await this.schedule();
+  }
+  async schedule() {
+    if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 86400 * 1000);
+  }
+  async alarm() {
+    const today = new Date().toISOString().slice(0, 10), now = Date.now(), del = [];
+    for (const [k, v] of await this.ctx.storage.list({ prefix: 'rl:' })) if (k.slice(3, 13) !== today) del.push(k);
+    for (const [k, v] of await this.ctx.storage.list({ prefix: 'c:' })) if (!v || v.exp <= now) del.push(k);
+    for (let i = 0; i < del.length; i += 128) await this.ctx.storage.delete(del.slice(i, i + 128));
+    await this.ctx.storage.setAlarm(Date.now() + 86400 * 1000);
+  }
 }
 
 async function parse(env, q) {
@@ -204,15 +237,6 @@ async function findPlace(query, want, area) {
   } catch (e) { return null; }
 }
 
-async function overLimit(cache, ctx, ip, step) {
-  const key = new Request('https://cache.matjip/rl/' + new Date().toISOString().slice(0, 10) + '/' + step + '/' + encodeURIComponent(ip));
-  const hit = await cache.match(key);
-  const n = hit ? parseInt(await hit.text(), 10) || 0 : 0;
-  if (n >= DAILY_LIMIT[step]) return true;
-  ctx.waitUntil(cache.put(key, new Response(String(n + 1), { headers: { 'Cache-Control': 'max-age=86400' } })));
-  return false;
-}
-
 async function sha(s) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(b)].slice(0, 16).map(x => x.toString(16).padStart(2, '0')).join('');
@@ -224,9 +248,4 @@ const dist = m => m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(
 
 function json(obj, status, headers) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...headers } });
-}
-function withHeaders(res, headers) {
-  const r = new Response(res.body, res);
-  for (const [k, v] of Object.entries(headers)) r.headers.set(k, v);
-  return r;
 }

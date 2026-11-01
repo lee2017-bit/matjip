@@ -55,7 +55,7 @@
 - 버튼을 누른 방문자 한 명의 검색만 대신 해 주는 구조라, 데이터 제공처가 허용하는 "개인의 장소 선택을 위한 제한된 조회"에 맞습니다.
 - 다른 사이트에서는 이 Worker를 부를 수 없도록 `https://lee2017-bit.github.io` 에서 온 요청만 허용합니다.
   도메인을 바꾸면 Worker의 Settings → Variables and Secrets에 `ALLOW_ORIGIN` (Text)을 새 주소로 추가하세요.
-- 같은 검색어는 하루 동안 캐시하도록 만들었지만, `workers.dev` 주소에서는 Cloudflare 캐시가 제한될 수 있습니다.
+- 같은 검색어는 하루 동안 캐시하도록 만들었지만, `workers.dev` 주소에서는 Cloudflare Cache API가 동작하지 않습니다 (k-skill 프록시 쪽 5분 캐시만 적용).
 - 실시간 조회를 끄려면 GitHub Variable `LOOKUP_API` 를 지우고 Run workflow 하면 됩니다.
 
 ---
@@ -73,8 +73,8 @@ main에 푸시할 때 Cloudflare가 함께 배포합니다.
   ② 사이트가 저장 데이터(주인장 픽·취향 포함)와 그 근처 실시간 eat.pl 가게로 후보 18곳을 만듦(영업시간·프랜차이즈·종류로 거름)
   ③ AI가 후보 번호만 골라 이유를 씀 ④ 카드와 eat.pl 링크는 사이트가 데이터 그대로 그림 — AI가 가게나 링크를 지어낼 수 없습니다.
 - 남용 방지: 등록한 사이트(Origin)에서 온 요청만, IP당 하루 질문 20개, 질문 200자, 후보 20곳 제한, 같은 질문(띄어쓰기·문장부호 무시)은 2일 캐시.
-  Cloudflare 캐시는 데이터센터(도시)마다 따로라, 한국 방문자에겐 한국 쪽 캐시가 쓰입니다.
+  `workers.dev` 주소에서는 Cloudflare Cache API가 동작하지 않아서, 캐시와 횟수는 Durable Object `ChatStore`(Free 플랜의 SQLite DO,
+  `wrangler.jsonc` 의 `durable_objects`·`migrations`)에 둡니다. 따로 만들 것 없이 배포 때 함께 생깁니다. IP는 날짜와 섞은 해시로만 세고, 매일 지난 기록을 지웁니다.
 - 예시 질문 답은 미리 만들어 둠: `node tools/ask_presets.js` (배포된 사이트에서 실제로 물어 `data/ask_presets.json` 에 저장) → 예시를 누르면 AI를 부르지 않고 바로 답함.
   예시 목록은 `build.py` 의 `ASK_EXAMPLES` (홈에는 4개씩 무작위). 데이터가 많이 바뀌면 다시 돌리면 됩니다.
-- 같은 질문의 답은 Cloudflare 캐시에 하루까지 남고, 하루 횟수를 세려고 IP를 하루 동안 캐시 키로 씁니다. 따로 기록하는 곳은 없습니다.
 - 끄려면 `worker/wrangler.jsonc` 에서 `ai` 줄을 지우면 됩니다 (물어보기 화면은 "AI 설정이 아직 안 되어 있어요"를 보여 줌).

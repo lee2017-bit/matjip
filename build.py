@@ -212,7 +212,13 @@ def clean_name(n) -> str:
         s = re.sub(CORP, " ", seg)
         m = re.search(r"\(([^)]{2,})\)\s*$", s)  # '(주)회사명(브랜드 지점)' → '브랜드 지점'
         if m and re.search(CORP, seg):
-            s = m.group(1)
+            inner, base = m.group(1).strip(), s[:m.start()].strip()
+            # 괄호 안이 지점·지역 이름뿐이면('(주)오리지널팬케이크하우스(판교점)') 회사명이 곧 가게 이름
+            # ('동우황태문정점'·'하이콴'처럼 브랜드가 들어 있으면 괄호 안을 쓴다)
+            if base and (re.fullmatch(r"\S{1,4}(점|지점|호점|직영점)", inner) or inner in ("카페", "식당")):
+                s = base + (" " + inner if inner.endswith("점") else "")
+            else:
+                s = inner
         s = re.sub(r"\s+", " ", s).strip(" ,·-")
         if s:
             parts.append(s)

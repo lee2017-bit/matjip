@@ -15,6 +15,7 @@
 // 방문자 한 명이 버튼을 눌렀을 때 한 번(최대 3번) 조회하는 개인 검색 용도로만 쓴다.
 
 import { chat } from './chat.js';
+export { ChatStore } from './chat.js';  // Durable Object (wrangler.jsonc 의 durable_objects)
 
 const PROXY = 'https://k-skill-proxy.nomadamas.org/v1/bccard-eatpl/search';
 const COORD2ADDR = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/coord2address';
