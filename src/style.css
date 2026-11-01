@@ -10,7 +10,7 @@ main{max-width:720px;margin:0 auto;padding:0 16px 48px}
 /* header */
 .top{max-width:720px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px}
 .brand{font-weight:800;font-size:19px;text-decoration:none;color:var(--accent)}
-.tagline{display:none}
+.tagline{display:none !important}
 .topnav{margin-left:auto;display:flex;gap:14px;font-size:14px}
 .topnav a{text-decoration:none;color:var(--muted)}
 .topnav a:hover{color:var(--fg)}
@@ -148,3 +148,11 @@ details.more p{margin:4px 0}
 .inapp .x{background:transparent;color:var(--bg);padding:6px}
 footer{max-width:720px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
 footer p{margin:4px 0}
+.hero.home{padding:40px 0 8px}
+.hero.home h1{font-size:32px}
+.home-extra{margin-top:14px}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quick a{display:flex;align-items:center;gap:10px;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-decoration:none;font-weight:600;font-size:15px}
+.quick a span{font-size:20px}
+.cats{margin-top:12px}
+.cats .chip{flex:none}

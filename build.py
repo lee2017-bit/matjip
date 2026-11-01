@@ -11,6 +11,7 @@ Usage:
 Data: eat.pl 잇플 search (BC카드 결제 데이터 기반) via the public k-skill proxy.
 Python standard library only.
 """
+import hashlib
 import html
 import json
 import math
@@ -524,6 +525,9 @@ def group_chips(present: set, default: str = "meal") -> str:
     return "".join(f'<button type="button" data-v="{k}"{on if k == default else ""}>{n}</button>' for k, n in chips)
 
 
+ASSET_V = ""  # main() 에서 style.css·app.js·map.js 내용으로 정한다 (휴대폰 캐시에 옛 화면이 남지 않게)
+
+
 def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
     up = "../" * depth
     canonical = f"{BASE_URL}/{path}" if BASE_URL else ""
@@ -539,7 +543,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:image" content="{esc(og_img)}">{f'<meta property="og:url" content="{esc(canonical)}">' if canonical else ''}
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="{up}assets/style.css">
+<link rel="stylesheet" href="{up}assets/style.css?v={ASSET_V}">
 </head><body data-root="{up}"{f' data-api="{esc(LOOKUP_API)}"' if LOOKUP_API else ''}>
 <div id="inapp" class="inapp" hidden></div>
 <header class="top"><a class="brand" href="{up}index.html">{SITE_NAME}</a><span class="tagline">{TAGLINE}</span>
@@ -549,7 +553,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 <p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong>. 매출점수는 최근 1개월 같은 업종 매출 순위를 0~100점으로 바꾼 값으로, 맛 평가가 아니에요. 영업시간은 결제 시각으로 추정한 값이에요.</p>
 <p>이 사이트는 BC카드나 eat.pl의 공식 서비스가 아닙니다.</p>
 </footer>
-<script src="{up}assets/app.js"></script>
+<script src="{up}assets/app.js?v={ASSET_V}"></script>
 </body></html>"""
 
 
@@ -598,8 +602,10 @@ def main():
     OUT.mkdir(exist_ok=True)
     for d in ("area", "cat", "assets"):
         (OUT / d).mkdir(exist_ok=True)
+    global ASSET_V
     for f in ("style.css", "app.js", "map.js"):
         (OUT / "assets" / f).write_text((SRC / f).read_text())
+    ASSET_V = hashlib.md5("".join((SRC / f).read_text() for f in ("style.css", "app.js", "map.js")).encode()).hexdigest()[:8]
     if (SRC / "og.png").exists():
         (OUT / "assets" / "og.png").write_bytes((SRC / "og.png").read_bytes())
 
@@ -821,10 +827,10 @@ def main():
     html_map = page(f"내 주변 맛집 지도 — 매출점수로 보는 동네 맛집 | {SITE_NAME}",
                     "지도에서 화면 안 매출점수 높은 집을 보고, 내 위치 주변 맛집을 가까운 순으로. BC카드 결제 데이터 기반.",
                     body, "map.html", 0)
-    html_map = html_map.replace('<link rel="stylesheet" href="assets/style.css">',
-                                '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">\n<link rel="stylesheet" href="assets/style.css">')
-    html_map = html_map.replace('<script src="assets/app.js"></script>',
-                                '<script src="assets/app.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>\n<script src="assets/map.js"></script>')
+    css_tag, js_tag = f'<link rel="stylesheet" href="assets/style.css?v={ASSET_V}">', f'<script src="assets/app.js?v={ASSET_V}"></script>'
+    html_map = html_map.replace(css_tag, '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">\n' + css_tag)
+    html_map = html_map.replace(js_tag, js_tag + '\n<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>\n'
+                                f'<script src="assets/map.js?v={ASSET_V}"></script>')
     (OUT / "map.html").write_text(html_map)
 
     # ---- search index (loaded lazily by the home page search box)
@@ -862,17 +868,21 @@ def main():
                       f'<div class="tiles">{tiles}</div></details>')
     cats = "".join(f'<a class="chip" href="cat/{k}.html">{esc(n)}</a>' for k, n, _ in cat_links)
     body = f"""
-<section class="hero" id="search">
+<section class="hero home" id="search">
   <h1>그 집, <span>몇 점</span>일까?</h1>
   <p class="sub">카드 결제 매출로 매긴 맛집 점수</p>
   <input id="q" type="search" placeholder="가게 이름이나 동네 검색" aria-label="가게 이름이나 동네 검색" autocomplete="off">
-  <a class="near-cta" href="map.html#near">◎ 내 주변 맛집</a>
   <div id="results" class="results" aria-live="polite"></div>
 </section>
-<section class="browse">
-  <h2>골라 보기</h2>
-  <div class="chips">{cats}<a class="chip taste" href="taste.html">주인장 취향 추천</a><a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
-</section>
+<div class="home-extra">
+<nav class="quick" aria-label="바로 가기">
+  <a href="map.html#near"><span aria-hidden="true">📍</span>내 주변</a>
+  <a href="taste.html"><span aria-hidden="true">🍽️</span>주인장 취향</a>
+  <a href="talk.html"><span aria-hidden="true">🤫</span>조용한 곳</a>
+  <a href="premium.html"><span aria-hidden="true">🍷</span>고급</a>
+</nav>
+<nav class="filters cats" aria-label="종류별 순위">{cats}<a class="chip" href="picks.html">주인장 픽</a></nav>
+</div>
 <div id="areas"><h2 class="section-title">동네별 <small>{len(built_areas)}곳</small></h2>
 {''.join(groups)}</div>
 <details class="how">

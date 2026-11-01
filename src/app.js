@@ -343,6 +343,8 @@
       s.hidden = !s.querySelector('.tile:not([hidden])');
       if (v && !s.hidden && s.tagName === 'DETAILS') s.open = true;
     });
+    var extra = document.querySelector('.home-extra');  // 검색 중에는 바로가기·종류 칩을 숨겨 결과만 보이게
+    if (extra) extra.hidden = !!v;
     var areasBox = document.getElementById('areas');
     if (areasBox) areasBox.hidden = !areasBox.querySelector('.city:not([hidden])');
     if (!results) return;
