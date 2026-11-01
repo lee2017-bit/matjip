@@ -14,7 +14,7 @@
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
 const DAILY_LIMIT = { parse: 30, answer: 40 };
-const PROMPT_V = 'v2';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+const PROMPT_V = 'v3';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -35,7 +35,7 @@ const ANSWER_SYS = `너는 맛집 사이트 '매출맛집'의 추천 도우미�
 - 메뉴 이름·가격·별점·맛 평가처럼 목록에 없는 사실을 지어내지 않는다. 업종·거리·매출점수·태그·영업시간만 근거로 쓴다. 업종에서 짐작되는 정도(찜/탕/찌개 → 따뜻한 국물)는 괜찮다.
 - 매출점수는 BC카드 결제 매출 순위로 매긴 0~100점이다(맛 평가가 아님). 높을수록 손님이 많이 찾는 집이다.
 - '주인장 픽'은 사이트 주인이 직접 다니며 모아 둔 맛집, '주인장 취향'은 주인장 픽과 특징이 비슷한 집이다.
-  후보에 '주인장 픽'이 있으면 상황에 크게 어긋나지 않는 한 1곳 이상 넣고, why에 주인장 픽이라고 밝힌다. 나머지는 가까운 곳과 섞는다.
+  이름 앞에 ★가 붙은 후보가 '주인장 픽'이다. ★ 후보가 있으면 상황에 크게 어긋나지 않는 한 1곳 이상 넣고, why에 주인장 픽이라고 밝힌다. 나머지는 가까운 곳과 섞는다.
 - 거리를 고려한다. 2km가 넘으면 차로 가기 좋은 거리라고 말해도 된다. 시간 계산은 하지 않는다.
 - 업종이 서로 겹치지 않게 고르면 좋다.
 - why: 상황에 맞는 이유 한 문장(45자 이내, 해요체).
@@ -106,7 +106,7 @@ async function answer(env, q, body) {
     t: (Array.isArray(c.t) ? c.t : []).map(x => clip(x, 12)).filter(Boolean).slice(0, 6), h: clip(c.h, 16),
   })).filter(c => c.n);
   if (!cands.length) return { answer: '', picks: [] };
-  const lines = cands.map(c => [c.i, c.n, c.c, c.s + '점', dist(c.d), c.t.join(', ') || '-', c.h || '-'].join(' | ')).join('\n');
+  const lines = cands.map(c => [c.i, (c.t.includes('주인장 픽') ? '★' : '') + c.n, c.c, c.s + '점', dist(c.d), c.t.join(', ') || '-', c.h || '-'].join(' | ')).join('\n');
   const user = '질문: ' + q
     + '\n상황: ' + (clip(intent.situation, 60) || '-') + (intent.time ? ' · 식사 시각 ' + clip(intent.time, 5) : '')
     + (Array.isArray(intent.foods) && intent.foods.length ? ' · 어울리는 음식 ' + intent.foods.slice(0, 5).map(x => clip(x, 12)).join(', ') : '')
@@ -116,6 +116,13 @@ async function answer(env, q, body) {
   const seen = new Set();
   const picks = (Array.isArray(j.picks) ? j.picks : []).map(p => ({ i: parseInt(p && p.i, 10), why: noUrl(clip(p && p.why, 90)) }))
     .filter(p => p.i >= 0 && p.i < cands.length && !seen.has(p.i) && seen.add(p.i)).slice(0, 4);
+  // 작은 모델은 '주인장 픽'과 '주인장 취향'을 헷갈린다: 후보에 픽이 있는데 하나도 안 골랐으면 순위가 가장 높은 픽을 넣는다
+  const isPick = c => c.t.includes('주인장 픽');
+  const firstPick = cands.find(isPick);
+  if (picks.length && firstPick && !picks.some(p => isPick(cands[p.i]))) {
+    const add = { i: firstPick.i, why: '주인장이 직접 다니며 모아 둔 집이에요 (' + dist(firstPick.d) + ')' };
+    if (picks.length >= 3) picks[picks.length - 1] = add; else picks.push(add);
+  }
   return { answer: noUrl(clip(j.answer, 300)), picks };
 }
 
