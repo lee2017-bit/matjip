@@ -107,3 +107,7 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .map-listhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .sortnav{padding:4px 0}
 .sortnav button{padding:6px 12px;font-size:13px}
+.tag.chain{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.listhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.chain-toggle{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:13px}
+.chain-toggle.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}

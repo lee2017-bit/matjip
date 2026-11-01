@@ -44,6 +44,20 @@
     var sushi = (cat === '스시/초밥' || cat === '기타일식') && /^스시\s?\S{1,4}$/.test(name);
     return PREMIUM_KW.test(name) || cat === '프랑스음식' || sushi;
   }
+  // 프랜차이즈 판정 (build.py 의 brand_of / is_chain 과 같은 방식, 체인 목록은 places.json 에서)
+  function brandOf(n) {
+    var t = cleanName(n).replace(/\(.*?\)/g, '').trim().split(/\s+/);
+    if (t.length >= 2 && /(점|지점|호점|직영점|본점)$/.test(t[t.length - 1])) t.pop();
+    var b = t.join('');
+    if (t.length === 1) b = b.replace(/([가-힣A-Za-z0-9]{2,}?)([가-힣0-9]{1,8}(역|대|동|로|타워|센터|빌딩|몰|광장|사거리|점)?점)$/, '$1');
+    return b.toLowerCase();
+  }
+  function isChainName(n) {
+    if (!data) return false;
+    var b = brandOf(n);
+    if (!data._chains) { data._chains = {}; (data.chains || []).forEach(function (c) { data._chains[c] = 1; }); }
+    return !!data._chains[b] || (data.chainKnown || []).some(function (k) { return b.indexOf(k) === 0; });
+  }
   function cleanName(n) {
     var parts = String(n || '').split('/').map(function (x) {
       var hadCorp = /\(주\)|㈜|주식회사/.test(x);
@@ -182,7 +196,8 @@
     pick.addEventListener('click', function () {
       var cards = Array.prototype.slice.call(list.querySelectorAll('.card'));
       var pool = cards.filter(function (c) {
-        return (c.getAttribute('data-f') || '').split(' ').indexOf('lunch') !== -1 && (c.getAttribute('data-g') || '').indexOf('meal') !== -1;
+        return (c.getAttribute('data-f') || '').split(' ').indexOf('lunch') !== -1 && (c.getAttribute('data-g') || '').indexOf('meal') !== -1
+          && c.getAttribute('data-k') !== 'chain';
       }).slice(0, 40);
       if (pool.length < 3) pool = cards.slice(0, 40);
       for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
@@ -242,6 +257,7 @@
     li.appendChild(m);
     if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
     if (p.premium) li.appendChild(el('span', 'tag premium', '고급 추정'));
+    if (p.chain) li.appendChild(el('span', 'tag chain', '프랜차이즈'));
     if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
     var act = el('div', 'actions');
     var go = el('a', 'go', 'eat.pl에서 메뉴·리뷰 요약 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
@@ -255,7 +271,7 @@
     li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16] }; }
 
   function liveButton(term, box) {
     if (!API) {
@@ -276,7 +292,7 @@
           ul.appendChild(placeCard({ name: cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
             score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과',
             busy: isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: isPremium(it), q: term,
-            lat: it.lat, lng: it.lng, live: true }));
+            lat: it.lat, lng: it.lng, live: true, chain: isChainName(it.merNm) }));
         });
         b.remove();
         if (found) { box.appendChild(el('p', 'count', 'BC카드 결제 데이터에서 ' + found + '곳을 찾았어요')); box.appendChild(ul); }
@@ -354,7 +370,7 @@
 
   // shared helpers for map.js
   window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
-    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, data: function () { return data; } };
+    isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, isChainName: isChainName, data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path

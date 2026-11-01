@@ -359,6 +359,32 @@ def mer_id(url) -> str:
     return str(url or "").rstrip("/").rsplit("/", 1)[-1]
 
 
+# 프랜차이즈: 이 사이트가 모은 가게 중 같은 상호가 4곳 이상이거나 잘 알려진 체인 (main 에서 FRANCHISE 를 채운다)
+CHAIN_MIN = 4
+CHAIN_KNOWN = ("스타벅스", "메가엠지씨", "메가커피", "컴포즈", "빽다방", "이디야", "투썸", "할리스", "커피빈", "폴바셋", "파스쿠찌",
+               "공차", "더벤티", "매머드", "바나프레소", "텐퍼센트", "맥도날드", "롯데리아", "버거킹", "케이에프씨", "kfc", "맘스터치",
+               "써브웨이", "서브웨이", "파리바게뜨", "뚜레쥬르", "배스킨", "던킨", "크리스피크림", "이삭토스트", "본죽", "교촌",
+               "비에이치씨", "bhc", "비비큐", "bbq", "굽네", "도미노", "피자헛", "김밥천국", "한솥", "본도시락", "새마을식당",
+               "홍콩반점", "역전할머니", "신전떡볶이", "엽기떡볶이", "죠스떡볶이", "설빙", "아웃백", "빕스", "애슐리")
+FRANCHISE: set = set()
+
+
+def brand_of(r: dict) -> str:
+    n = re.sub(r"\(.*?\)", "", clean_name(r.get("merNm"))).strip()
+    t = n.split()
+    if len(t) >= 2 and re.search(r"(점|지점|호점|직영점|본점)$", t[-1]):
+        t = t[:-1]
+    b = "".join(t)
+    if len(t) == 1:  # '투썸플레이스을지트윈타워점' 처럼 붙여 쓴 지점명
+        b = re.sub(r"([가-힣A-Za-z0-9]{2,}?)([가-힣0-9]{1,8}(역|대|동|로|타워|센터|빌딩|몰|광장|사거리|점)?점)$", r"\1", b)
+    return b.lower()
+
+
+def is_chain(r: dict) -> bool:
+    b = brand_of(r)
+    return b in FRANCHISE or any(b.startswith(k) for k in CHAIN_KNOWN)
+
+
 def card(r: dict, rank: int) -> str:
     cat = r.get("merTpbuzNm") or "기타"
     g = GROUP_OF.get(cat, "etc")
@@ -368,6 +394,7 @@ def card(r: dict, rank: int) -> str:
     if r.get("_pick"):
         tags.append('<span class="tag pick">주인장 픽</span>')
     premium = is_premium(r)
+    chain = is_chain(r)
     talk = is_talk(r) or (premium and not is_busy(r)) or bool(r.get("_tag_room"))
     if r.get("_tag_room"):
         tags.append('<span class="tag room">룸 있음</span>')
@@ -378,6 +405,8 @@ def card(r: dict, rank: int) -> str:
     for on, t in ((r.get("empyVsitYn"), "회식 적합"), (r.get("loclPrsnPpltYn"), "동네 맛집"), (r.get("frnrVsitYn"), "외국인 방문")):
         if on:
             tags.append(f'<span class="tag">{t}</span>')
+    if chain:
+        tags.append('<span class="tag chain">프랜차이즈</span>')
     cust = r.get("vistCstmrRnkList") or {}
     cust_txt = ", ".join(v for v in (cust.get("rk01"), cust.get("rk02"), cust.get("rk03")) if v)
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
@@ -395,7 +424,7 @@ def card(r: dict, rank: int) -> str:
         notes.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
                      + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
     note = "".join(notes)
-    return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-c="{esc(city_of(r.get('merAddr')))}">
+    return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-k="{'chain' if chain else 'indie'}" data-c="{esc(city_of(r.get('merAddr')))}">
   <div class="card-head"><span class="rank">{rank}</span><span class="ico" aria-hidden="true">{icon_of(cat)}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
   <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
   <p class="nums"><strong>전국 같은 업종 매출 상위 {pct(r.get('allSaleRnk'))}%</strong> · 구 안에서 상위 {pct(r.get('ccgSaleRnk'))}%</p>
@@ -457,7 +486,8 @@ AGE_NAV = ('<nav class="filters" data-key="a" aria-label="주 고객">'
            '<button type="button" data-v="mix">남녀 고루</button></nav>')
 
 
-def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal") -> str:
+def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal",
+                 chain_default: str = "indie") -> str:
     city_nav = ""
     if cities and len(cities) > 1:
         city_nav = ('<nav class="filters" data-key="c" aria-label="지역">'
@@ -477,7 +507,8 @@ def list_section(cards: str, present: set, cities: list | None = None, purpose: 
     return f"""{city_nav}{AGE_NAV}<div class="sticky">
 <nav class="filters" data-key="g" aria-label="종류">{group_chips(present, default)}</nav>
 {purpose_nav}</div>
-<p class="count" id="count"></p>
+<div class="listhead"><p class="count" id="count"></p>
+<nav class="filters sortnav" data-key="k" aria-label="프랜차이즈"><button type="button" data-v="indie"{' class="on"' if chain_default == "indie" else ''}>프랜차이즈 빼고</button><button type="button" data-v=""{' class="on"' if chain_default != "indie" else ''}>포함</button></nav></div>
 <ol class="list" id="list">
 {cards}
 </ol>"""
@@ -536,6 +567,11 @@ def main():
         area_rows.append((a, items, fetched))
     for r in picks.get("items", []):
         prep(r)
+    brand_count = {}
+    for r in places.values():
+        b = brand_of(r)
+        brand_count[b] = brand_count.get(b, 0) + 1
+    FRANCHISE.update(b for b, n in brand_count.items() if n >= CHAIN_MIN and len(b) >= 2)
     prem = sorted((r for r in places.values() if is_premium(r)), key=lambda r: float(r.get("allSaleRnk") or 999))
     for i, r in enumerate(prem):
         r["_prem_rank"] = (i + 1, len(prem))
@@ -546,7 +582,7 @@ def main():
         updated = fetched[:10]
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(items))
         meals = [r for r in items if GROUP_OF.get(r.get("merTpbuzNm")) not in ("drink", "cafe")]
-        top3 = ", ".join(r["_name"] for r in meals[:3])
+        top3 = ", ".join(r["_name"] for r in [m for m in meals if not is_chain(m)][:3])
         present = {GROUP_OF.get(r.get("merTpbuzNm"), "etc") for r in items}
         body = f"""
 <section class="hero small">
@@ -606,7 +642,7 @@ def main():
   <p class="sub">이 사이트를 만든 사람이 오래전부터 지도에 모아 온 맛집 중 eat.pl 데이터가 있는 곳입니다. 가성비 집, 데이트 코스, 유명한 집이 섞여 있어요. 평균 매출점수 {avg}점.</p>
   <button type="button" class="share-page">주인장 픽 공유하기</button>
 </section>
-{list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prows}, cities, default="")}"""
+{list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prows}, cities, default="", chain_default="")}"""
         (OUT / "picks.html").write_text(page(f"주인장 픽 — 직접 모은 맛집 {len(prows)}곳의 매출점수 | {SITE_NAME}",
                                              "사이트 주인이 지도에 모아 온 전국 맛집을 BC카드 결제 매출점수로 다시 봤습니다.",
                                              body, "picks.html", 0))
@@ -656,6 +692,7 @@ def main():
 <div class="map-tools">
   <button type="button" id="locate" class="locate">◎ 내 위치</button>
   <button type="button" id="here" class="here" hidden>이 지역 실시간으로 찾기</button>
+  <button type="button" id="chain-toggle" class="chain-toggle on">✓ 프랜차이즈 빼고</button>
   <span id="map-status" class="map-status" aria-live="polite"></span>
 </div>
 <nav class="filters" id="map-filter" aria-label="보기">
@@ -686,10 +723,11 @@ def main():
     index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
               r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0,
               1 if (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) else 0, 1 if is_premium(r) else 0,
-              1 if r.get("empyVsitYn") else 0, *(latlng(r) or (0, 0))]
+              1 if r.get("empyVsitYn") else 0, *(latlng(r) or (0, 0)), 1 if is_chain(r) else 0]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
-        {"areas": area_name, "groups": GROUP_NAME, "places": index}, ensure_ascii=False, separators=(",", ":")))
+        {"areas": area_name, "groups": GROUP_NAME, "places": index,
+         "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN)}, ensure_ascii=False, separators=(",", ":")))
 
     # ---- home
     groups = []

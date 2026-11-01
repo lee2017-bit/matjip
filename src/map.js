@@ -26,7 +26,9 @@
     return 2 * R * Math.asin(Math.sqrt(x));
   }
   function fmtDist(m) { return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km'; }
+  var noChain = true;       // 프랜차이즈 빼고 보기 (기본)
   function pass(p) {
+    if (noChain && p.chain) return false;
     if (!filter) return true;
     if (filter === 'meal') return p.g !== 'drink' && p.g !== 'cafe';
     if (filter === 'talk') return !!p.talk;
@@ -40,12 +42,18 @@
   var autoLeft = 8;         // 한 번 방문에 자동 조회는 최대 8번
 
   var all = [];             // normalized places with coordinates
+  function groupOf(cat) {   // 실시간 가게의 분류 (places.json 에 같은 업종이 있으면 그 분류를 쓴다)
+    var d = M.data();
+    if (!d) return '';
+    if (!d._catGroup) { d._catGroup = {}; d.places.forEach(function (p) { d._catGroup[p[2]] = p[1]; }); }
+    return d._catGroup[cat] || 'etc';
+  }
   function fromIndex(p) { var o = M.fromIndex(p); o.g = p[1]; return o; }
   function fromLive(it) {
     return { name: M.cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
       score: M.scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl,
       busy: M.isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: M.isPremium(it),
-      lat: it.lat, lng: it.lng, live: true, note: '실시간 조회 결과', g: '' };
+      lat: it.lat, lng: it.lng, live: true, note: '실시간 조회 결과', g: groupOf(it.merTpbuzNm), chain: M.isChainName(it.merNm) };
   }
 
   function popup(p) {
@@ -152,6 +160,11 @@
   M.focus = focus;
 
   document.getElementById('locate').addEventListener('click', locate);
+  var chainBtn = document.getElementById('chain-toggle');
+  if (chainBtn) chainBtn.addEventListener('click', function () {
+    noChain = !noChain; chainBtn.classList.toggle('on', noChain);
+    chainBtn.textContent = noChain ? '✓ 프랜차이즈 빼고' : '프랜차이즈 포함'; render();
+  });
   if (hereBtn) hereBtn.addEventListener('click', function () { var c = map.getCenter(); live(c.lat, c.lng); });
   document.querySelectorAll('#map-filter button').forEach(function (b) {
     b.addEventListener('click', function () {
