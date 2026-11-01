@@ -156,3 +156,11 @@ footer p{margin:4px 0}
 .quick a span{font-size:20px}
 .cats{margin-top:12px}
 .cats .chip{flex:none}
+.home-extra{margin-top:18px;display:flex;flex-direction:column;gap:14px}
+.near-big{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:14px;align-items:center;padding:18px 20px;border-radius:18px;background:var(--accent);color:#fff;text-decoration:none}
+.near-big span{grid-row:1 / span 2;font-size:30px}
+.near-big b{font-size:19px}
+.near-big small{font-size:13px;opacity:.9}
+.home-more{color:var(--muted);font-size:14px;text-decoration:none;text-align:center}
+.home-more:hover{color:var(--fg)}
+.theme{margin-bottom:6px}

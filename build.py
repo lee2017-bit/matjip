@@ -547,7 +547,7 @@ def page(title: str, desc: str, body: str, path: str, depth: int) -> str:
 </head><body data-root="{up}"{f' data-api="{esc(LOOKUP_API)}"' if LOOKUP_API else ''}>
 <div id="inapp" class="inapp" hidden></div>
 <header class="top"><a class="brand" href="{up}index.html">{SITE_NAME}</a><span class="tagline">{TAGLINE}</span>
-<nav class="topnav"><a href="{up}index.html#search">점수 검색</a><a href="{up}map.html">지도</a><a href="{up}picks.html">주인장 픽</a></nav></header>
+<nav class="topnav"><a href="{up}map.html">지도</a><a href="{up}areas.html">동네별</a></nav></header>
 <main>{body}</main>
 <footer>
 <p>데이터: <strong>eat.pl 잇플 · BC카드 결제 데이터 기반</strong>. 매출점수는 최근 1개월 같은 업종 매출 순위를 0~100점으로 바꾼 값으로, 맛 평가가 아니에요. 영업시간은 결제 시각으로 추정한 값이에요.</p>
@@ -681,7 +681,7 @@ def main():
         present = {GROUP_OF.get(r.get("merTpbuzNm"), "etc") for r in items}
         body = f"""
 <section class="hero small">
-  <p class="crumb"><a href="../index.html">전체 지역</a> › {esc(a['city'])}</p>
+  <p class="crumb"><a href="../areas.html">동네별</a> › {esc(a['city'])}</p>
   <h1>{esc(a['name'])} 맛집</h1>
   <p class="sub">카드 매출 상위 {len(items)}곳 · {esc(updated)} 기준</p>
   <button type="button" class="share-page">공유하기</button>
@@ -712,7 +712,7 @@ def main():
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(rows))
         body = f"""
 <section class="hero small">
-  <p class="crumb"><a href="../index.html">홈</a> › 종류별 순위</p>
+  <p class="crumb"><a href="../areas.html">동네·종류별</a> › {esc(name)}</p>
   <h1>{esc(name)} 맛집 TOP {len(rows)}</h1>
   <p class="sub">전국 {len(places):,}곳 중 매출점수 순</p>
   <button type="button" class="share-page">공유하기</button>
@@ -798,9 +798,7 @@ def main():
     # ---- 지도
     body = """
 <section class="hero small map-hero">
-  <p class="crumb"><a href="index.html">홈</a> › 지도</p>
-  <h1>지도</h1>
-  <p class="sub">화면 안 매출점수 높은 집 · 내 위치 주변</p>
+  <h1>내 주변 맛집</h1>
 </section>
 <div class="map-tools">
   <button type="button" id="locate" class="locate">◎ 내 위치</button>
@@ -808,15 +806,18 @@ def main():
   <button type="button" id="chain-toggle" class="chain-toggle on">✓ 프랜차이즈 빼고</button>
   <span id="map-status" class="map-status" aria-live="polite"></span>
 </div>
-<nav class="filters" id="map-filter" aria-label="보기">
+<nav class="filters theme" id="map-theme" aria-label="테마">
+  <button type="button" data-v="" class="on">모든 집</button><button type="button" data-v="taste">🍽️ 주인장 취향</button>
+  <button type="button" data-v="talk">🤫 조용한 곳</button><button type="button" data-v="premium">🍷 고급</button>
+  <button type="button" data-v="pick">⭐ 주인장 픽</button><button type="button" data-v="group">👥 회식</button>
+</nav>
+<nav class="filters" id="map-filter" aria-label="종류">
   <button type="button" data-v="meal" class="on">식사</button><button type="button" data-v="">전체</button>
   <button type="button" data-v="korean">한식</button><button type="button" data-v="meat">고기</button>
   <button type="button" data-v="seafood">해산물</button><button type="button" data-v="japanese">일식</button>
   <button type="button" data-v="chinese">중식</button><button type="button" data-v="western">양식·아시안</button>
   <button type="button" data-v="quick">분식·간편식</button><button type="button" data-v="drink">술집</button>
-  <button type="button" data-v="cafe">카페·디저트</button><button type="button" data-v="talk">대화하기 좋은 곳</button>
-  <button type="button" data-v="premium">고급</button><button type="button" data-v="pick">주인장 픽</button>
-  <button type="button" data-v="taste">주인장 취향</button>
+  <button type="button" data-v="cafe">카페·디저트</button>
 </nav>
 <div id="map" class="map" role="region" aria-label="맛집 지도"></div>
 <div class="map-listhead"><p class="count" id="map-count"></p>
@@ -871,18 +872,25 @@ def main():
 <section class="hero home" id="search">
   <h1>그 집, <span>몇 점</span>일까?</h1>
   <p class="sub">카드 결제 매출로 매긴 맛집 점수</p>
-  <input id="q" type="search" placeholder="가게 이름이나 동네 검색" aria-label="가게 이름이나 동네 검색" autocomplete="off">
+  <input id="q" type="search" placeholder="가게 이름 검색" aria-label="가게 이름 검색" autocomplete="off">
   <div id="results" class="results" aria-live="polite"></div>
+  <div class="home-extra">
+    <a class="near-big" href="map.html#near"><span aria-hidden="true">📍</span><b>내 주변 맛집</b><small>지금 위치 근처 매출 상위 집을 지도로</small></a>
+    <a class="home-more" href="areas.html">동네별 · 종류별 순위 보기 →</a>
+  </div>
+</section>"""
+    areas_body = f"""
+<section class="hero small">
+  <h1>동네별 · 종류별</h1>
+  <p class="sub">{len(built_areas)}개 동네 · {len(places):,}곳</p>
 </section>
-<div class="home-extra">
-<nav class="quick" aria-label="바로 가기">
-  <a href="map.html#near"><span aria-hidden="true">📍</span>내 주변</a>
+<nav class="quick" aria-label="테마">
   <a href="taste.html"><span aria-hidden="true">🍽️</span>주인장 취향</a>
   <a href="talk.html"><span aria-hidden="true">🤫</span>조용한 곳</a>
   <a href="premium.html"><span aria-hidden="true">🍷</span>고급</a>
+  <a href="picks.html"><span aria-hidden="true">⭐</span>주인장 픽</a>
 </nav>
-<nav class="filters cats" aria-label="종류별 순위">{cats}<a class="chip" href="picks.html">주인장 픽</a></nav>
-</div>
+<nav class="filters cats" aria-label="종류별 순위">{cats}</nav>
 <div id="areas"><h2 class="section-title">동네별 <small>{len(built_areas)}곳</small></h2>
 {''.join(groups)}</div>
 <details class="how">
@@ -898,12 +906,15 @@ def main():
     <li><strong>고급 추정</strong> — 오마카세·파인다이닝·비스트로·한우 등 가격대가 있어 보이는 집이에요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서 고급 업장끼리 순위를 따로 보여 드려요. <a href="premium.html">모아 보기</a></li>
   </ul>
 </details>"""
+    (OUT / "areas.html").write_text(page(f"동네별·종류별 맛집 매출 순위 — {len(built_areas)}개 동네 | {SITE_NAME}",
+                                         f"을지로·강남·여의도·판교·성수 등 {len(built_areas)}개 동네와 한식·고기·일식 등 종류별 매출점수 순위.",
+                                         areas_body, "areas.html", 0))
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"
     desc = f"별점 말고 실제 결제 매출로 매긴 맛집 점수. {len(places):,}곳 검색, 한식·고기·일식 등 종류별 순위, 을지로·강남·여의도·판교 등 {len(built_areas)}개 동네 점심·회식 맛집."
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
 
     if BASE_URL:
-        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html", f"{BASE_URL}/taste.html"]
+        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html", f"{BASE_URL}/taste.html", f"{BASE_URL}/areas.html"]
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)

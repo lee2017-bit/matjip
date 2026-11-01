@@ -7,7 +7,8 @@
   var listEl = document.getElementById('map-list');
   var countEl = document.getElementById('map-count');
   var hereBtn = document.getElementById('here');
-  var filter = 'meal';
+  var filter = 'meal';      // 종류
+  var theme = '';           // 테마: 주인장 취향·조용한 곳·고급·주인장 픽·회식
   var me = null;            // {lat, lng}
   var liveItems = [];       // 실시간 조회로 받은 가게 (places.json 에 없는 곳)
   var focusMarker = null;
@@ -29,6 +30,11 @@
   var noChain = true;       // 프랜차이즈 빼고 보기 (기본)
   function pass(p) {
     if (noChain && p.chain) return false;
+    if (theme === 'taste' && !p.taste) return false;
+    if (theme === 'talk' && !p.talk) return false;
+    if (theme === 'premium' && !p.premium) return false;
+    if (theme === 'pick' && !p.pick) return false;
+    if (theme === 'group' && !p.group) return false;
     if (!filter) return true;
     if (filter === 'meal') return p.g !== 'drink' && p.g !== 'cafe';
     if (filter === 'talk') return !!p.talk;
@@ -174,6 +180,19 @@
       b.classList.add('on'); filter = b.getAttribute('data-v'); render();
     });
   });
+  document.querySelectorAll('#map-theme button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#map-theme button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on'); theme = b.getAttribute('data-v');
+      // 고급·조용한 곳은 카페·술집도 볼 수 있게 종류를 '전체'로
+      if (theme && filter === 'meal' && (theme === 'talk' || theme === 'premium')) {
+        var all = document.querySelector('#map-filter button[data-v=""]'); if (all) all.click(); else render();
+      } else render();
+    });
+  });
+  // 주소의 #theme=taste 처럼 테마를 바로 열 수 있게
+  var th = /[#&]theme=(\w+)/.exec(location.hash);
+  if (th) { var tb = document.querySelector('#map-theme button[data-v="' + th[1] + '"]'); if (tb) setTimeout(function () { tb.click(); }, 0); }
   var autoTimer = null;
   map.on('moveend', function () {
     render();
