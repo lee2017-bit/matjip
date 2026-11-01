@@ -111,3 +111,11 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .listhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .chain-toggle{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:13px}
 .chain-toggle.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+details.city summary{list-style:none;cursor:pointer}
+details.city summary::-webkit-details-marker{display:none}
+details.city summary h2{display:flex;align-items:center;gap:8px}
+details.city summary h2 span{font-size:13px;color:var(--muted);font-weight:400}
+details.city summary h2::after{content:"▾";font-size:14px;color:var(--muted)}
+details.city:not([open]) summary h2::after{content:"▸"}
+.section-title small{font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
+@media (max-width:600px){#areas .tiles{grid-template-columns:1fr 1fr;gap:8px}#areas .tile{padding:10px 12px}#areas .tile strong{font-size:15px}#areas .tile span{font-size:12px}}

@@ -20,11 +20,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Build (full refresh on the weekly schedule, cached data otherwise)
+      - name: Build (weekly schedule refreshes a quarter of the areas, cached data otherwise)
         env:
           BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
           LOOKUP_API: ${{ vars.LOOKUP_API || 'https://matjip-lookup.jaewon-lee2017.workers.dev' }}
-        run: python3 build.py ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--refresh' || '' }}
+        run: python3 build.py ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '--rotate' || '' }}
       - name: Save refreshed data
         if: github.event_name != 'push'
         run: |

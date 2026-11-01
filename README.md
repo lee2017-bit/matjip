@@ -3,9 +3,9 @@
 별점 대신 BC카드 최근 1개월 결제 데이터(eat.pl 잇플)의 매출 순위로 가게마다 0~100점 **매출점수**를 매기고,
 가게 검색·종류별 순위·동네별 순위를 보여 주는 정적 사이트입니다. <https://lee2017-bit.github.io/matjip/>
 
-- `areas.json` — 동네 목록과 검색 주소 키워드
+- `areas.json` — 동네 목록과 검색 주소 키워드 (도로명 또는 '구 동' 단위)
 - `build.py` — 동네별 순위를 받아 `site/`에 HTML과 검색 색인(`assets/places.json`)을 만든다 (Python 표준 라이브러리만 사용)
-- `data/cache/` — 동네별 eat.pl 응답 캐시 (매주 갱신)
+- `data/cache/` — 동네별 eat.pl 응답 캐시 (157개 동네. 매주 월요일 1/4씩 돌아가며 갱신 `--rotate`, 새 동네만 처음에 받음)
 - `data/picks.json` — "주인장 픽": 사이트 주인이 카카오맵에 모아 온 맛집 중 eat.pl에 있는 곳 (`tools/picks.py`로 생성)
 - `worker/lookup.js` — 목록에 없는 가게를 이름으로, 또는 지도 '내 위치' 주변 동네를 실시간 조회하는 Cloudflare Worker (키 불필요, main의 `worker/`가 바뀌면 Cloudflare가 자동 배포, [docs/realtime-setup.md](docs/realtime-setup.md))
 - `src/map.js` — 지도 페이지(Leaflet + OpenStreetMap). eat.pl 좌표(TM128)는 빌드 때 WGS84로 변환

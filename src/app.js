@@ -45,18 +45,20 @@
     return PREMIUM_KW.test(name) || cat === '프랑스음식' || sushi;
   }
   // 프랜차이즈 판정 (build.py 의 brand_of / is_chain 과 같은 방식, 체인 목록은 places.json 에서)
-  function brandOf(n) {
+  function brandParts(n) {
     var t = cleanName(n).replace(/\(.*?\)/g, '').trim().split(/\s+/);
-    if (t.length >= 2 && /(점|지점|호점|직영점|본점)$/.test(t[t.length - 1])) t.pop();
-    var b = t.join('');
-    if (t.length === 1) b = b.replace(/([가-힣A-Za-z0-9]{2,}?)([가-힣0-9]{1,8}(역|대|동|로|타워|센터|빌딩|몰|광장|사거리|점)?점)$/, '$1');
-    return b.toLowerCase();
+    var branch = t.length >= 2 && /(점|지점|호점|직영점|본점)$/.test(t[t.length - 1]);
+    if (branch) t.pop();
+    return [t.join('').toLowerCase(), branch];
   }
   function isChainName(n) {
     if (!data) return false;
-    var b = brandOf(n);
+    var b = brandParts(n)[0];
     if (!data._chains) { data._chains = {}; (data.chains || []).forEach(function (c) { data._chains[c] = 1; }); }
-    return !!data._chains[b] || (data.chainKnown || []).some(function (k) { return b.indexOf(k) === 0; });
+    if (data._chains[b] || (data.chainKnown || []).some(function (k) { return b.indexOf(k) === 0; })) return true;
+    if (/(점|지점|호점|직영점|본점)$/.test(b) && (data.chains || []).some(function (f) { return f.length >= 3 && b.indexOf(f) === 0; })) return true;
+    var first = (cleanName(n).replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] || '').toLowerCase();
+    return first.length >= 3 && !!data._chains[first];
   }
   function cleanName(n) {
     var parts = String(n || '').split('/').map(function (x) {
@@ -213,6 +215,16 @@
   function load() {
     if (data || loading) return loading;
     loading = fetch(ROOT + 'assets/places.json').then(function (r) { return r.json(); }).then(function (d) {
+      if (d.v === 2) {  // 압축 형식을 예전 배열 모양으로 풀어 쓴다 (build.py 참고)
+        var areaSlug = d.areas.map(function (a) { return a[0]; }), areaMap = {};
+        d.areas.forEach(function (a) { areaMap[a[0]] = a[1]; });
+        d.places = d.places.map(function (q) {
+          var f = q[8];
+          return [q[0], d.catGroup[q[1]], d.cats[q[1]], q[2], q[3], q[4], q[5], q[6], q[7] >= 0 ? areaSlug[q[7]] : '',
+            f & 1 ? 1 : 0, f & 2 ? 1 : 0, f & 4 ? 1 : 0, f & 8 ? 1 : 0, f & 16 ? 1 : 0, q[9], q[10], f & 32 ? 1 : 0];
+        });
+        d.areas = areaMap;
+      }
       d.places.forEach(function (p) {
         p.n = norm(p[0]);
         p.hay = p.n + norm(p[3]) + norm(p[2]) + norm(d.groups[p[1]] || '') + norm(d.areas[p[8]] || '');
@@ -309,7 +321,10 @@
     document.querySelectorAll('.tile').forEach(function (t) {
       t.hidden = !!v && (t.getAttribute('data-name') || '').indexOf(v) === -1;
     });
-    document.querySelectorAll('.city').forEach(function (s) { s.hidden = !s.querySelector('.tile:not([hidden])'); });
+    document.querySelectorAll('.city').forEach(function (s) {
+      s.hidden = !s.querySelector('.tile:not([hidden])');
+      if (v && !s.hidden && s.tagName === 'DETAILS') s.open = true;
+    });
     var areasBox = document.getElementById('areas');
     if (areasBox) areasBox.hidden = !areasBox.querySelector('.city:not([hidden])');
     if (!results) return;

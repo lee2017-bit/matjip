@@ -2,8 +2,9 @@
 """Build the static site: fetch restaurant rankings per area, then render HTML pages.
 
 Usage:
-  python3 build.py                 # use cached data when it is younger than 6 days
+  python3 build.py                 # use cached data; fetch only areas that have no cache yet
   python3 build.py --refresh       # fetch everything again
+  python3 build.py --rotate        # weekly schedule: fetch again only a quarter of the areas
   BASE_URL=https://example.github.io/eatpl python3 build.py   # absolute URLs for sitemap / share previews
   LOOKUP_API=https://matjip-lookup.example.workers.dev python3 build.py   # enable live lookups (worker/)
 
@@ -34,7 +35,7 @@ LOOKUP_API = os.environ.get("LOOKUP_API", "").strip().rstrip("/")
 SITE_NAME = "매출맛집"
 TAGLINE = "별점 말고, 실제로 많이 팔리는 집"
 KST = timezone(timedelta(hours=9))
-MAX_AGE = timedelta(days=6)
+ROTATE = 4  # --rotate: 매주 동네의 1/4만 새로 받는다 (한 번에 많이 부르지 않기)
 
 # category groups (eat.pl 업종명 → 사이트 분류). Order = order of the filter chips.
 GROUPS = [
@@ -84,11 +85,9 @@ def fetch(location: str) -> list:
 
 def area_items(area: dict, refresh: bool) -> tuple[list, str]:
     path = CACHE / f"{area['slug']}.json"
-    if path.exists() and not refresh:
+    if path.exists() and not refresh:  # 캐시가 있으면 쓴다. 새로 받는 건 --refresh / --rotate 일 때만
         cached = json.loads(path.read_text())
-        fetched = datetime.fromisoformat(cached["fetched_at"])
-        if datetime.now(KST) - fetched < MAX_AGE:
-            return cached["items"], cached["fetched_at"]
+        return cached["items"], cached["fetched_at"]
     merged, seen = [], set()
     for q in area["q"]:
         rows = None
@@ -359,7 +358,7 @@ def mer_id(url) -> str:
     return str(url or "").rstrip("/").rsplit("/", 1)[-1]
 
 
-# 프랜차이즈: 이 사이트가 모은 가게 중 같은 상호가 4곳 이상이거나 잘 알려진 체인 (main 에서 FRANCHISE 를 채운다)
+# 프랜차이즈: 이 사이트가 모은 가게 중 '상호 ○○점' 형태가 4곳 이상이거나 잘 알려진 체인 (main 에서 FRANCHISE 를 채운다)
 CHAIN_MIN = 4
 CHAIN_KNOWN = ("스타벅스", "메가엠지씨", "메가커피", "컴포즈", "빽다방", "이디야", "투썸", "할리스", "커피빈", "폴바셋", "파스쿠찌",
                "공차", "더벤티", "매머드", "바나프레소", "텐퍼센트", "맥도날드", "롯데리아", "버거킹", "케이에프씨", "kfc", "맘스터치",
@@ -369,20 +368,30 @@ CHAIN_KNOWN = ("스타벅스", "메가엠지씨", "메가커피", "컴포즈", "
 FRANCHISE: set = set()
 
 
+BRANCH_RE = re.compile(r"(점|지점|호점|직영점|본점)$")
+
+
+def brand_parts(r: dict) -> tuple[str, bool]:
+    """(상호, 지점명이 붙어 있었나). '메가엠지씨커피 서울역점' → ('메가엠지씨커피', True)."""
+    t = re.sub(r"\(.*?\)", "", clean_name(r.get("merNm"))).split()
+    if len(t) >= 2 and BRANCH_RE.search(t[-1]):
+        return "".join(t[:-1]).lower(), True
+    return "".join(t).lower(), False
+
+
 def brand_of(r: dict) -> str:
-    n = re.sub(r"\(.*?\)", "", clean_name(r.get("merNm"))).strip()
-    t = n.split()
-    if len(t) >= 2 and re.search(r"(점|지점|호점|직영점|본점)$", t[-1]):
-        t = t[:-1]
-    b = "".join(t)
-    if len(t) == 1:  # '투썸플레이스을지트윈타워점' 처럼 붙여 쓴 지점명
-        b = re.sub(r"([가-힣A-Za-z0-9]{2,}?)([가-힣0-9]{1,8}(역|대|동|로|타워|센터|빌딩|몰|광장|사거리|점)?점)$", r"\1", b)
-    return b.lower()
+    return brand_parts(r)[0]
 
 
 def is_chain(r: dict) -> bool:
-    b = brand_of(r)
-    return b in FRANCHISE or any(b.startswith(k) for k in CHAIN_KNOWN)
+    b, _ = brand_parts(r)
+    if b in FRANCHISE or any(b.startswith(k) for k in CHAIN_KNOWN):
+        return True
+    # '투썸플레이스을지트윈타워점' 처럼 붙여 쓴 지점명, '하이디라오코리아 코엑스' 처럼 지점 표시가 없는 경우
+    if BRANCH_RE.search(b) and any(len(f) >= 3 and b.startswith(f) for f in FRANCHISE):
+        return True
+    first = re.sub(r"\(.*?\)", "", clean_name(r.get("merNm"))).split()[:1]
+    return bool(first and len(first[0]) >= 3 and first[0].lower() in FRANCHISE)
 
 
 def card(r: dict, rank: int) -> str:
@@ -517,6 +526,8 @@ def list_section(cards: str, present: set, cities: list | None = None, purpose: 
 # ------------------------------------------------------------------ build
 def main():
     refresh = "--refresh" in sys.argv
+    week = datetime.now(KST).isocalendar()[1]
+    rotate = "--rotate" in sys.argv
     areas = json.loads((ROOT / "areas.json").read_text())
     picks = json.loads(PICKS.read_text()) if PICKS.exists() else {"picks": [], "items": []}
     pick_name = {p["merUrl"]: p["name"] for p in picks.get("picks", [])}
@@ -555,7 +566,7 @@ def main():
 
     index_cards, latest, built_areas, area_rows = {}, "", [], []
     for a in areas:
-        raw, fetched = area_items(a, refresh)
+        raw, fetched = area_items(a, refresh or (rotate and areas.index(a) % ROTATE == week % ROTATE))
         items = [x for x in (prep(r) for r in raw) if x]
         if not items:
             print(f"{a['slug']:16s}   - skipped (no data yet)")
@@ -568,9 +579,10 @@ def main():
     for r in picks.get("items", []):
         prep(r)
     brand_count = {}
-    for r in places.values():
-        b = brand_of(r)
-        brand_count[b] = brand_count.get(b, 0) + 1
+    for r in places.values():  # '○○ ○○점' 처럼 지점명이 붙은 상호만 센다 (흔한 이름 '고향집' 등은 제외)
+        b, branch = brand_parts(r)
+        if branch:
+            brand_count[b] = brand_count.get(b, 0) + 1
     FRANCHISE.update(b for b, n in brand_count.items() if n >= CHAIN_MIN and len(b) >= 2)
     prem = sorted((r for r in places.values() if is_premium(r)), key=lambda r: float(r.get("allSaleRnk") or 999))
     for i, r in enumerate(prem):
@@ -720,13 +732,27 @@ def main():
     (OUT / "map.html").write_text(html_map)
 
     # ---- search index (loaded lazily by the home page search box)
-    index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
-              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0,
-              1 if (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) else 0, 1 if is_premium(r) else 0,
-              1 if r.get("empyVsitYn") else 0, *(latlng(r) or (0, 0)), 1 if is_chain(r) else 0]
+    # 압축 형식 (v2): [이름, 업종번호, 주소, 점수, 전국%, 구%, eat.pl id, 동네번호(-1), 플래그, 위도, 경도]
+    # 플래그 비트: 1 주인장 픽, 2 아주 붐빔, 4 대화하기 좋은 곳, 8 고급 추정, 16 회식 적합, 32 프랜차이즈. app.js load()가 풀어 쓴다.
+    cats = sorted({r.get("merTpbuzNm") or "" for r in ranked})
+    cat_no = {c: i for i, c in enumerate(cats)}
+    slugs = [a["slug"] for a in built_areas]
+    area_no = {sl: i for i, sl in enumerate(slugs)}
+
+    def flags(r):
+        talk = is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]
+        return ((1 if r["_pick"] else 0) | (2 if is_busy(r) else 0) | (4 if talk else 0) | (8 if is_premium(r) else 0)
+                | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0))
+
+    def pos(r):
+        ll = latlng(r)
+        return [round(ll[0], 4), round(ll[1], 4)] if ll else [0, 0]
+    index = [[r["_name"], cat_no[r.get("merTpbuzNm") or ""], short_addr(r.get("merAddr")), r["_score"], r.get("allSaleRnk"),
+              r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), area_no.get(r["_area"], -1), flags(r), *pos(r)]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
-        {"areas": area_name, "groups": GROUP_NAME, "places": index,
+        {"v": 2, "cats": cats, "catGroup": [GROUP_OF.get(c, "etc") for c in cats],
+         "areas": [[sl, area_name[sl]] for sl in slugs], "groups": GROUP_NAME, "places": index,
          "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN)}, ensure_ascii=False, separators=(",", ":")))
 
     # ---- home
@@ -736,7 +762,8 @@ def main():
             f'<a class="tile" href="area/{esc(a["slug"])}.html" data-name="{esc(a["name"])} {esc(city)}">'
             f'<strong>{esc(a["name"])}</strong><span>{n}곳 · {esc(top3)}</span></a>'
             for a, n, top3 in rows)
-        groups.append(f'<section class="city"><h2>{esc(city)}</h2><div class="tiles">{tiles}</div></section>')
+        groups.append(f'<details class="city"><summary><h2>{esc(city)} <span>{len(rows)}곳</span></h2></summary>'
+                      f'<div class="tiles">{tiles}</div></details>')
     cats = "".join(f'<a class="chip" href="cat/{k}.html">{esc(n)}</a>' for k, n, _ in cat_links)
     body = f"""
 <section class="hero" id="search">
@@ -750,7 +777,7 @@ def main():
   <h2>종류별 매출점수 순위</h2>
   <div class="chips">{cats}<a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
 </section>
-<div id="areas"><h2 class="section-title">동네별 점심·회식 맛집</h2>
+<div id="areas"><h2 class="section-title">동네별 점심·회식 맛집 <small>{len(built_areas)}개 동네 · 눌러서 펼치기</small></h2>
 {''.join(groups)}</div>
 <section class="how">
   <h2>점수는 이렇게 읽어요</h2>
