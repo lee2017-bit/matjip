@@ -49,7 +49,7 @@
     var box = el('div', 'pop');
     var h = el('strong', '', M.iconOf(p.cat) + ' ' + p.name); box.appendChild(h);
     box.appendChild(el('div', 'pop-meta', p.score + '점 · ' + (p.cat || '') + (me ? ' · ' + fmtDist(dist(me, p)) : '')));
-    var a = el('a', 'go', 'eat.pl에서 자세히 보기 →'); a.href = p.url; a.target = '_blank'; a.rel = 'noopener';
+    var a = el('a', 'go', 'eat.pl에서 메뉴·리뷰 요약 보기 →'); a.href = p.url; a.target = '_blank'; a.rel = 'noopener';
     box.appendChild(a);
     return box;
   }

@@ -403,7 +403,7 @@ def card(r: dict, rank: int) -> str:
   <p class="meta">{'영업 예상 ' + esc(hrs) + ' · ' if hrs else ''}{esc(holidays(r.get('hldyDwk')))}{(' · 붐비는 때 ' + esc(peak)) if peak else ''}</p>
   {f'<p class="meta">주 고객 {esc(cust_txt)}</p>' if cust_txt else ''}
   {''.join(tags)}
-  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 자세히 보기 →</a>{'<button type="button" class="map-btn">지도</button>' if latlng(r) else ''}<button type="button" class="share">공유</button></div>
+  <div class="actions"><a class="go" href="{esc(r.get('merUrl'))}" target="_blank" rel="noopener">eat.pl에서 메뉴·리뷰 요약 보기 →</a>{'<button type="button" class="map-btn">지도</button>' if latlng(r) else ''}<button type="button" class="share">공유</button></div>
 </li>"""
 
 

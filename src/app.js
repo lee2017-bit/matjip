@@ -244,7 +244,7 @@
     if (p.premium) li.appendChild(el('span', 'tag premium', '고급 추정'));
     if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
     var act = el('div', 'actions');
-    var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
+    var go = el('a', 'go', 'eat.pl에서 메뉴·리뷰 요약 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
     act.appendChild(go);
     if (p.lat) {
       var mb = el('button', 'map-btn', '지도'); mb.type = 'button';
