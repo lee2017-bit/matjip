@@ -13,7 +13,7 @@
 
 const MODELS = ['@cf/google/gemma-4-26b-a4b-it', '@cf/qwen/qwen3-30b-a3b-fp8'];
 const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/keyword';
-const DAILY_LIMIT = { parse: 30, answer: 40 };
+const DAILY_LIMIT = { parse: 20, answer: 20 };  // IP당 하루 질문 20개
 // 소개팅·데이트 자리 (AI가 놓쳐도 이 말이 있으면): 사이트가 20~30대 여성 손님이 많은 곳만 후보로 보낸다
 const DATE_RE = /소개팅|데이트|썸녀|썸남|썸 ?타|연인|여자 ?친구|여친|남자 ?친구|남친|기념일|프로포즈|커플|맞선|선 ?자리/;
 const PROMPT_V = 'v7';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게

@@ -978,8 +978,7 @@ def main():
 </form>
 <div class="ask-ex" aria-label="예시 질문">{ex}</div>
 <div id="ask-out" class="ask-out" aria-live="polite"></div>
-<p class="small-note sub">AI(Cloudflare Workers AI)가 질문을 읽고 <strong>이 사이트의 가게 목록 안에서만</strong> 골라요. 점수·링크는 데이터 그대로이고,
-추천 이유는 AI가 쓴 글이라 틀릴 수 있어요. 질문은 저장하지 않으며, 하루에 물어볼 수 있는 횟수에 제한이 있어요.</p>"""
+<p class="small-note sub">추천 이유는 AI가 쓴 글이라 틀릴 수 있어요.</p>"""
         html_ask = page(f"뭐 먹을지 물어보기 — 상황 맞춤 맛집 추천 | {SITE_NAME}",
                         "장소·시간·상황을 말하면 근처 매출 상위 집과 주인장 픽 중에서 골라 주는 맛집 추천. BC카드 결제 데이터 기반.",
                         body, "ask.html", 0)
