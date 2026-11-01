@@ -36,6 +36,8 @@ LOOKUP_API = os.environ.get("LOOKUP_API", "").strip().rstrip("/")
 SITE_NAME = "매출맛집"
 TAGLINE = "별점 말고, 실제로 많이 팔리는 집"
 KST = timezone(timedelta(hours=9))
+# 식당이 아닌 등록: 업종 미상 묶음(○○(구)_NICE), 단체급식·케이터링 업체
+NOT_RESTAURANT = re.compile(r"_NICE|\(구\)_|케이터링|급식|위탁")
 LOW_CUT = 50  # 전국 같은 업종 매출 하위 절반(상위 50% 밖)은 싣지 않는다. 주인장 픽·고급 추정은 예외
 ROTATE = 4  # --rotate: 매주 동네의 1/4만 새로 받는다 (한 번에 많이 부르지 않기)
 
@@ -627,7 +629,7 @@ def main():
     pick_name = {p["merUrl"]: p["name"] for p in picks.get("picks", [])}
     tag_file = ROOT / "data" / "tags.json"
     tdata = json.loads(tag_file.read_text()) if tag_file.exists() else {}
-    tags = {k: set(tdata.get(k) or []) for k in ("room", "premium")}  # merUrl 또는 가게 이름
+    tags = {k: set(tdata.get(k) or []) for k in ("room", "premium", "exclude")}  # merUrl 또는 가게 이름
 
     OUT.mkdir(exist_ok=True)
     for d in ("area", "cat", "assets"):
@@ -652,6 +654,8 @@ def main():
         r["_tag_room"] = url in tags["room"] or bool(nm & tags["room"])
         r["_tag_premium"] = url in tags["premium"] or bool(nm & tags["premium"])
         if r.get("merTpbuzNm") in SKIP_CATS and not is_premium(r):
+            return None
+        if NOT_RESTAURANT.search(r.get("merNm") or "") or url in tags["exclude"] or (nm & tags["exclude"]):
             return None
         try:
             low = float(r.get("allSaleRnk")) > LOW_CUT
