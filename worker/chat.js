@@ -18,7 +18,7 @@ const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/k
 const DAILY_LIMIT = { parse: 20, answer: 20 };  // IP당 하루 질문 20개
 // 소개팅·데이트 자리 (AI가 놓쳐도 이 말이 있으면): 사이트가 20~30대 여성 손님이 많은 곳만 후보로 보낸다
 const DATE_RE = /소개팅|데이트|썸녀|썸남|썸 ?타|연인|여자 ?친구|여친|남자 ?친구|남친|기념일|프로포즈|커플|맞선|선 ?자리/;
-const PROMPT_V = 'v7';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+const PROMPT_V = 'v8';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"date":false,"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -224,7 +224,10 @@ async function findPlace(query, want, area) {
     const j = await kakao(query, area ? 10 : 5);
     const docs = j ? j.documents : [];
     if (!docs.length) return null;
-    const exact = docs.find(x => norm(x.place_name) === w) || (!area && (docs.find(x => norm(x.place_name).indexOf(w) === 0)
+    const station = d => /지하철|전철/.test(d.category_name || '') && norm(d.place_name).indexOf(w) === 0;
+    // '잠실' 같은 짧은 이름이 '잠실한강공원'으로 잡히지 않게: 정확히 같은 이름 → 그 이름의 지하철역 → (짧은 이름은 동네로) → 앞부분이 같은 곳
+    if (!area && w.length <= 3 && !docs.find(x => norm(x.place_name) === w) && !docs.find(station)) return findPlace(want, want, true);
+    const exact = docs.find(x => norm(x.place_name) === w) || (!area && (docs.find(station) || docs.find(x => norm(x.place_name).indexOf(w) === 0)
       || (w.length >= 4 && docs.find(x => norm(x.place_name).indexOf(w) !== -1))));
     if (area && !exact) {
       const mid = a => a.sort((x, y) => x - y)[a.length >> 1];

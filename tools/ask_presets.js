@@ -1,6 +1,6 @@
 // 예시 질문의 답을 미리 만들어 data/ask_presets.json 에 저장한다 (사이트의 예시 버튼은 AI를 부르지 않고 이 파일로 바로 답한다).
 //
-//   node tools/ask_presets.js [https://lee2017-bit.github.io/matjip/]
+//   node tools/ask_presets.js [https://lee2017-bit.github.io/matjip/] [--only 잠실,광화문]   (--only: 이 말이 들어간 질문만 다시)
 //
 // 배포된 사이트의 '물어보기'를 실제로 돌려(질문 분석 → 후보 → AI 답) 화면이 남긴 결과(window.__askResult)를 모은다.
 // 질문 목록은 사이트 ask.html 의 예시 버튼. Playwright 필요. 질문 1개 = Worker AI 호출 2번 (IP당 하루 제한 안에서).
@@ -8,7 +8,10 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const SITE = (process.argv[2] || 'https://lee2017-bit.github.io/matjip/').replace(/\/?$/, '/');
+const args = process.argv.slice(2);
+const oi = args.indexOf('--only');
+const ONLY = oi !== -1 ? args.splice(oi, 2)[1].split(',').map(x => x.trim()).filter(Boolean) : null;
+const SITE = (args[0] || 'https://lee2017-bit.github.io/matjip/').replace(/\/?$/, '/');
 const OUT = path.join(__dirname, '..', 'data', 'ask_presets.json');
 const qkey = q => String(q || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
 
@@ -20,6 +23,7 @@ const qkey = q => String(q || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '')
   const questions = await page.$$eval('.ask-ex button', bs => bs.map(b => b.textContent.trim()));
   const answers = {};
   for (const q of questions) {
+    if (ONLY && !ONLY.some(w => q.includes(w))) { if (old.answers[qkey(q)]) answers[qkey(q)] = old.answers[qkey(q)]; continue; }
     await page.goto('about:blank');
     // #fresh: 미리 만든 답을 쓰지 않고 새로 묻는다
     await page.goto(SITE + 'ask.html#fresh&q=' + encodeURIComponent(q));

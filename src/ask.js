@@ -99,9 +99,10 @@
     var radius = [1000, 2000, 3500, 6000, 9000, 12000].filter(function (r) {
       return ok.filter(function (p) { return p.d <= r; }).length >= 14;
     })[0] || 12000;
-    // 주인장 픽은 조금 멀어도(반경의 3배: 도심 3km, 교외 6km 안팎) 후보에 넣는다 — 주인장이 그 동네에서 직접 모아 둔 집이라서
+    // 주인장 픽은 조금 멀어도 후보에 넣는다 — 주인장이 그 동네에서 직접 모아 둔 집이라서
     // 소개팅·데이트는 주인장 픽을 챙기지 않는다
-    var pickR = intent.date ? radius : Math.min(Math.max(radius * 3, 2000), 12000);
+    // 도심(1km 안에 후보가 충분)은 1.5km까지만, 교외는 반경의 3배까지
+    var pickR = intent.date ? radius : radius <= 1000 ? 1500 : Math.min(radius * 3, 12000);
     ok = ok.filter(function (p) { return p.d <= radius || (p.pick && p.d <= pickR); });
     ok.forEach(function (p) {
       var mine = !intent.date && (p.pick ? 14 : 0) + (p.taste ? 8 : 0);
