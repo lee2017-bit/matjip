@@ -77,3 +77,8 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;z-index:10;box-shadow:0 4px 18px rgba(0,0,0,.18)}
 .shared{margin-top:12px;padding:12px;border:2px solid var(--accent);border-radius:16px;background:var(--accent-soft)}
 .shared-title{margin:0 0 4px;font-weight:800;color:var(--accent)}
+.tag.talk{background:#e8f1ec;color:#2f6b4f;font-weight:700}
+@media (prefers-color-scheme:dark){.tag.talk{background:#1c2b23;color:#8fd1ae}}
+.chip.talk{border-color:#2f6b4f;color:#2f6b4f;font-weight:700}
+@media (prefers-color-scheme:dark){.chip.talk{border-color:#8fd1ae;color:#8fd1ae}}
+.small-note{font-size:13px}

@@ -28,7 +28,7 @@
   function pct(v) { var f = parseFloat(v); return isNaN(f) ? '-' : (f < 1 ? f.toFixed(2) : f.toFixed(1)); }
   // 아주 붐비는 집 (same rule as is_busy in build.py)
   function isBusy(all, group) { var p = parseFloat(all); return !isNaN(p) && (p <= 0.5 || (p <= 1 && !!group)); }
-  var BUSY_NOTE = '아주 붐비는 집 · 점수는 높지만 소개팅에는 다소 시끄러울 수 있어요';
+  var BUSY_NOTE = '아주 붐비는 집 · 점수는 높지만 조용히 대화하기엔 다소 시끄러울 수 있어요';
   var MER = 'https://web.paybooc.ai/mer/web/profile/';
 
   // ---------------------------------------------------------------- sharing
@@ -194,6 +194,7 @@
     }
     li.appendChild(m);
     if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
+    if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
     var act = el('div', 'actions');
     var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
     act.appendChild(go);
@@ -201,7 +202,7 @@
     li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11] }; }
 
   function liveButton(term, box) {
     if (!API) {

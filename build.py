@@ -213,7 +213,31 @@ def is_busy(r: dict) -> bool:
     return p <= 0.5 or (p <= 1 and bool(r.get("empyVsitYn")))
 
 
-BUSY_NOTE = "아주 붐비는 집 · 점수는 높지만 소개팅에는 다소 시끄러울 수 있어요"
+BUSY_NOTE = "아주 붐비는 집 · 점수는 높지만 조용히 대화하기엔 다소 시끄러울 수 있어요"
+
+# 대화하기 좋은 곳: 결제 데이터로 추정한 '조용히 이야기 나누기 좋은 집' (전체의 약 6%)
+TALK_CATS = {"이탈리아음식", "프랑스음식", "기타외국식", "아시안", "멕시칸", "스시/초밥", "기타일식", "브런치카페/샐러드", "바(bar)"}
+TALK_CHAIN = re.compile(r"(?<!본)점(\)|$)|지점|신세계|현대백화점|롯데|몰|타임스퀘어|스타필드|아이파크|코엑스")
+TALK_KW = re.compile(r"와인|wine|비스트로|bistro|다이닝|dining|오마카세|omakase|트라토리아|오스테리아|osteria|trattoria", re.I)
+
+
+def is_talk(r: dict) -> bool:
+    """양식·일식·바 등 업종(또는 와인·다이닝 등 이름) + 아주 붐비는 집 아님 + 단체 회식 결제 없음
+    + 저녁 영업(20:30 이후까지) + 아침 장사 아님 + 주 고객이 20~30대 + 같은 업종 매출 상위 1~60% (최상위 1%는 붐벼서 제외) + 체인 지점·쇼핑몰 매장 아님."""
+    try:
+        p = float(r.get("allSaleRnk"))
+    except (TypeError, ValueError):
+        return False
+    srt, end = r.get("srtTime") or "", r.get("endTime") or ""
+    if not srt or not end or p < 1 or p > 60 or r.get("empyVsitYn"):  # 상위 1% 안은 손님이 몰리는 집이라 제외
+        return False
+    if not (r.get("merTpbuzNm") in TALK_CATS or TALK_KW.search(r.get("merNm") or "")):
+        return False
+    if TALK_CHAIN.search(clean_name(r.get("merNm")).replace(" ", "")):  # 체인 지점·쇼핑몰 매장은 대체로 북적여서 제외
+        return False
+    cust = r.get("vistCstmrRnkList") or {}
+    young = any(("20대" in (v or "") or "30대" in (v or "")) for v in (cust.get("rk01"), cust.get("rk02")))
+    return (end < srt or end >= "2030") and srt >= "1030" and young
 
 
 def mer_id(url) -> str:
@@ -228,6 +252,9 @@ def card(r: dict, rank: int) -> str:
     tags = []
     if r.get("_pick"):
         tags.append('<span class="tag pick">주인장 픽</span>')
+    talk = is_talk(r)
+    if talk:
+        tags.append('<span class="tag talk">대화하기 좋은 곳</span>')
     for on, t in ((r.get("empyVsitYn"), "회식 적합"), (r.get("loclPrsnPpltYn"), "동네 맛집"), (r.get("frnrVsitYn"), "외국인 방문")):
         if on:
             tags.append(f'<span class="tag">{t}</span>')
@@ -236,7 +263,7 @@ def card(r: dict, rank: int) -> str:
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
     busy = is_busy(r)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
-                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy)) if on)
+                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
     note = f'<p class="note">{BUSY_NOTE}</p>' if busy else ""
@@ -300,6 +327,7 @@ def list_section(cards: str, present: set, cities: list | None = None, purpose: 
                        '<button type="button" data-v="" class="on">모든 상황</button>'
                        '<button type="button" data-v="lunch">점심 영업</button>'
                        '<button type="button" data-v="group">회식</button>'
+                       '<button type="button" data-v="talk">대화하기 좋은 곳</button>'
                        '<button type="button" data-v="local">동네 맛집</button>'
                        '<button type="button" data-v="foreign">외국인 많이 가는 곳</button>'
                        '<button type="button" data-v="pick">주인장 픽</button></nav>')
@@ -426,9 +454,27 @@ def main():
                                              "사이트 주인이 지도에 모아 온 전국 맛집을 BC카드 결제 매출점수로 다시 봤습니다.",
                                              body, "picks.html", 0))
 
+    # ---- 대화하기 좋은 곳
+    trows = [r for r in ranked if is_talk(r)]
+    if trows:
+        cities = sorted({city_of(r.get("merAddr")) for r in trows}, key=lambda c: -sum(1 for r in trows if city_of(r.get("merAddr")) == c))
+        cards = "\n".join(card(r, i + 1) for i, r in enumerate(trows))
+        body = f"""
+<section class="hero small">
+  <p class="crumb"><a href="index.html">홈</a> › 대화하기 좋은 곳</p>
+  <h1>조용히 대화하기 좋은 곳 <span>{len(trows)}곳</span></h1>
+  <p class="sub">소개팅, 데이트, 오랜만의 친구 모임처럼 대화가 중요한 자리에. 결제 데이터로 골랐어요: 양식·일식·바 같은 업종, 단체 회식 결제가 없고, 손님이 몰리는 매출 최상위 집과 체인 지점·쇼핑몰 매장은 빼고, 저녁까지 영업하며 20~30대 손님이 많은 곳입니다.</p>
+  <p class="sub small-note">실제 소음을 잰 것은 아니라서 분위기는 다를 수 있어요. eat.pl 상세 페이지에서 붐비는 시간대를 꼭 확인해 보세요.</p>
+  <button type="button" class="share-page">이 목록 공유하기</button>
+</section>
+{list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in trows}, cities, purpose=False, default="")}"""
+        (OUT / "talk.html").write_text(page(f"조용히 대화하기 좋은 맛집 {len(trows)}곳 — 소개팅·데이트 장소 | {SITE_NAME}",
+                                            "단체 회식이 없고 너무 붐비지 않는, 저녁에 조용히 대화하기 좋은 양식·일식·바. BC카드 결제 데이터로 골랐습니다.",
+                                            body, "talk.html", 0))
+
     # ---- search index (loaded lazily by the home page search box)
     index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
-              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0]
+              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0, 1 if is_talk(r) else 0]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
         {"areas": area_name, "groups": GROUP_NAME, "places": index}, ensure_ascii=False, separators=(",", ":")))
@@ -451,7 +497,7 @@ def main():
 </section>
 <section class="browse">
   <h2>종류별 매출점수 순위</h2>
-  <div class="chips">{cats}<a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
+  <div class="chips">{cats}<a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
 </section>
 <div id="areas"><h2 class="section-title">동네별 점심·회식 맛집</h2>
 {''.join(groups)}</div>
@@ -461,7 +507,8 @@ def main():
     <li><strong>매출점수</strong> — 전국 같은 업종 가게 중 매출 순위(75%)와 같은 구 안 순위(25%)를 0~100점으로 바꾼 값입니다. 상위 0.1%면 95점 안팎, 1%면 86점, 10%면 68점 정도예요.</li>
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
-    <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 소개팅처럼 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
+    <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
+    <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. <a href="talk.html">모아 보기</a></li>
   </ul>
 </section>"""
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"
@@ -469,7 +516,7 @@ def main():
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
 
     if BASE_URL:
-        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html"]
+        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html"]
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)
