@@ -55,7 +55,7 @@
       score: M.scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl,
       busy: M.isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: M.isPremium(it),
       lat: it.lat, lng: it.lng, live: true, g: groupOf(it.merTpbuzNm), chain: M.isChainName(it.merNm),
-      ages: M.custTags(it).ages, sex: M.custTags(it).sex, mine: false };
+      ages: M.custTags(it).ages, sex: M.custTags(it).sex, taste: M.isTaste(it), mine: M.isTaste(it) };
   }
 
   function popup(p) {

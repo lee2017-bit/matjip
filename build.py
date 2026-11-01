@@ -450,6 +450,15 @@ def taste_features(r: dict) -> dict:
     return f
 
 
+def is_destination(r: dict) -> bool:
+    """찾아가서 먹는 유명한 집: 매출점수 90점 이상 + 동네 주민 위주가 아님 + 프랜차이즈 아님 + 식사 업종.
+    모델은 주인장 목록에서 '주말·저녁에 찾아가는 집'을 주로 배워서 '평일 점심 줄 서는 노포'를 놓치기 쉬워 규칙으로 더한다.
+    Keep in sync with isDestination() in src/app.js."""
+    g = GROUP_OF.get(r.get("merTpbuzNm"), "etc")
+    return (r.get("_score", score_of(r)) >= 90 and not r.get("loclPrsnPpltYn") and not is_chain(r)
+            and g not in ("drink", "cafe", "quick", "etc"))
+
+
 def taste_prob(r: dict) -> float:
     if not TASTE:
         return 0.0
@@ -668,11 +677,14 @@ def main():
         raw = r.get("merNm") or ""
         return bool(re.search(CORP, raw)) and "/" not in raw and not re.search(r"\(([^)]{2,})\)\s*$", raw.split("/")[0])
     others = sorted((r for r in places.values() if not r["_pick"] and not corp_only(r)), key=lambda r: -taste_prob(r)) if TASTE else []
+    taste_thr = 1.0
     for i, r in enumerate(others):
         top = (i + 1) / len(others)
-        r["_taste"] = top <= TASTE_TOP
-        r["_taste_top"] = max(1, math.ceil(top * 100))
         r["_taste_p"] = taste_prob(r)
+        r["_taste"] = top <= TASTE_TOP or is_destination(r)
+        r["_taste_top"] = max(1, math.ceil(top * 100))
+        if top <= TASTE_TOP:
+            taste_thr = r["_taste_p"]
 
     for a, items, fetched in area_rows:
         items.sort(key=lambda r: (-r["_score"], float(r.get("allSaleRnk") if r.get("allSaleRnk") is not None else 999)))
@@ -857,7 +869,9 @@ def main():
     (OUT / "assets" / "places.json").write_text(json.dumps(
         {"v": 2, "cats": cats, "catGroup": [GROUP_OF.get(c, "etc") for c in cats],
          "areas": [[sl, area_name[sl]] for sl in slugs], "groups": GROUP_NAME, "places": index,
-         "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN)}, ensure_ascii=False, separators=(",", ":")))
+         "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN),
+         "taste": ({k: TASTE[k] for k in ("features", "mean", "scale", "coef", "intercept")} | {"thr": taste_thr}) if TASTE else None},
+        ensure_ascii=False, separators=(",", ":")))
 
     # ---- home
     groups = []

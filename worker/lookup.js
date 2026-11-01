@@ -36,8 +36,12 @@ export default {
     if (hit) return withHeaders(hit, cors);
 
     // 시도 순서: ① 전체를 가게 이름으로 ② "동네 가게" → 마지막 단어를 이름, 앞을 지역으로 ③ "가게 동네" → 첫 단어를 이름
+    // 시도 순서: ① 전체를 이름으로 ② 업종 말을 뗀 이름('농민백암순대' → '농민백암', eat.pl 등록 이름이 다를 때가 많다)
+    // ③ "동네 가게" → 마지막 단어를 이름 ④ "가게 동네" → 첫 단어를 이름. 결과가 나오면 멈춘다.
     const tries = [{ name: q, location: '' }];
     const t = q.split(' ');
+    const ti = t.findIndex(w => FOOD_SUFFIX.test(w) && core(w));
+    if (ti !== -1) tries.push({ name: core(t[ti]), location: t.filter((_, i) => i !== ti).join(' ') });
     if (t.length > 1) {
       tries.push({ name: t[t.length - 1], location: t.slice(0, -1).join(' ') });
       tries.push({ name: t[0], location: t.slice(1).join(' ') });
@@ -111,6 +115,8 @@ async function eatpl({ name, location }) {
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const FOOD_SUFFIX = /(순대국밥|순대국|순대|국밥|설렁탕|곰탕|해장국|칼국수|냉면|막국수|갈비|곱창|족발|보쌈|치킨|김밥|떡볶이|식당|회관|본점|집)$/;
+const core = w => { const c = w.replace(FOOD_SUFFIX, ''); return c.length >= 2 ? c : ''; };
 
 function json(obj, status, headers) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...headers } });

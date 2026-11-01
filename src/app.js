@@ -232,6 +232,8 @@
   var q = document.getElementById('q');
   var results = document.getElementById('results');
   var data = null, loading = null;
+  var FOOD_SUFFIX = /(순대국밥|순대국|순대|국밥|설렁탕|곰탕|해장국|칼국수|냉면|막국수|갈비|곱창|족발|보쌈|치킨|김밥|떡볶이|식당|회관|본점|집)$/;
+  function coreName(t) { var c = String(t || '').replace(FOOD_SUFFIX, ''); return c.length >= 2 ? c : ''; }
   function norm(s) { return String(s || '').toLowerCase().replace(/\(주\)|㈜|주식회사/g, '').replace(/[^0-9a-z가-힣]/g, ''); }
   function load() {
     if (data || loading) return loading;
@@ -352,7 +354,7 @@
           ul.appendChild(placeCard({ name: cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
             score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과',
             busy: isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: isPremium(it), q: term,
-            lat: it.lat, lng: it.lng, live: true, chain: isChainName(it.merNm) }));
+            lat: it.lat, lng: it.lng, live: true, chain: isChainName(it.merNm), taste: isTaste(it) }));
         });
         b.remove();
         if (found) { box.appendChild(el('p', 'count', 'BC카드 결제 데이터에서 ' + found + '곳을 찾았어요')); box.appendChild(ul); }
@@ -384,8 +386,10 @@
       if (q.value.trim() !== v) return;
       var toks = v.split(/\s+/).map(norm).filter(Boolean);
       var whole = norm(v);
+      // '농민백암순대'처럼 업종 말이 붙은 이름은 '농민백암'으로도 찾는다 (eat.pl 등록 이름이 다를 때가 많다)
+      var alts = toks.map(function (t) { var c = coreName(t); return c && c !== t ? [t, c] : [t]; });
       var hits = d.places.filter(function (p) {
-        return toks.every(function (t) { return p.hay.indexOf(t) !== -1; });
+        return alts.every(function (a) { return a.some(function (t) { return p.hay.indexOf(t) !== -1; }); });
       });
       hits.sort(function (a, b) {
         var ra = a.n === whole ? 0 : a.n.indexOf(whole) === 0 ? 1 : a.n.indexOf(whole) !== -1 ? 2 : 3;
@@ -433,10 +437,55 @@
     });
   }
 
+  // 주인장 취향 (build.py taste_features / taste_prob / is_destination 과 같은 계산, 모델은 places.json 에서)
+  function tasteFeatures(it) {
+    var f = {}, a = parseFloat(it.allSaleRnk), c = parseFloat(it.ccgSaleRnk);
+    a = isNaN(a) ? 99 : a; c = isNaN(c) ? 99 : c;
+    f.log_all = Math.log(Math.max(a, 0.01)) / Math.LN10; f.log_ccg = Math.log(Math.max(c, 0.01)) / Math.LN10; f.all_minus_ccg = f.log_all - f.log_ccg;
+    var g = catGroupOf(it.merTpbuzNm);
+    ['korean', 'meat', 'seafood', 'japanese', 'chinese', 'western', 'quick', 'drink', 'cafe', 'etc'].forEach(function (k) { f['g_' + k] = g === k ? 1 : 0; });
+    f.local = it.loclPrsnPpltYn ? 1 : 0; f.foreign = it.frnrVsitYn ? 1 : 0; f.group_dinner = it.empyVsitYn ? 1 : 0;
+    var s = it.srtTime || '', e = it.endTime || '';
+    var sh = /^\d{4}$/.test(s) ? +s.slice(0, 2) + +s.slice(2) / 60 : 11, eh = /^\d{4}$/.test(e) ? +e.slice(0, 2) + +e.slice(2) / 60 : 21;
+    if (eh < sh) eh += 24;
+    f.open_h = sh; f.close_h = eh; f.dur_h = eh - sh;
+    var hol = it.hldyDwk || [];
+    f.n_holiday = hol.length; f.closed_weekend = (hol.indexOf('토') !== -1 || hol.indexOf('일') !== -1) ? 1 : 0; f.closed_mon = hol.indexOf('월') !== -1 ? 1 : 0;
+    ['점심', '저녁', '심야', '오전', '오후', '새벽'].forEach(function (k) { f['peak_' + k] = it.congestionTizn === k ? 1 : 0; });
+    f.peak_weekend = (it.congestionDwk === '토' || it.congestionDwk === '일') ? 1 : 0;
+    var cust = it.vistCstmrRnkList || {}, ages = [], fem = 0;
+    ['rk01', 'rk02', 'rk03'].forEach(function (k) { var v = cust[k] || '', m = /(\d+)대/.exec(v); if (m) ages.push(+m[1]); if (v.indexOf('여성') !== -1) fem++; });
+    f.n_2030 = ages.filter(function (x) { return x === 20 || x === 30; }).length; f.n_50p = ages.filter(function (x) { return x >= 50; }).length;
+    f.top1_age = ages.length ? ages[0] : 40; f.n_female = fem;
+    f.chain = isChainName(it.merNm) ? 1 : 0; f.premium = isPremium(it) ? 1 : 0;
+    var n = cleanName(it.merNm);
+    f.name_len = n.length; f.name_latin = /[A-Za-z]/.test(n) ? 1 : 0;
+    f.name_oldschool = /(식당|집|회관|가든|옥|정|관)$/.test(n.replace(/\s/g, '')) ? 1 : 0; f.name_bonjeom = (it.merNm || '').indexOf('본점') !== -1 ? 1 : 0;
+    return f;
+  }
+  function catGroupOf(cat) {
+    if (!data) return 'etc';
+    if (!data._cg) { data._cg = {}; (data.cats || []).forEach(function (c, i) { data._cg[c] = data.catGroup[i]; }); }
+    return data._cg[cat] || 'etc';
+  }
+  function isDestination(it, score) {
+    var g = catGroupOf(it.merTpbuzNm);
+    return score >= 90 && !it.loclPrsnPpltYn && !isChainName(it.merNm) && ['drink', 'cafe', 'quick', 'etc'].indexOf(g) === -1;
+  }
+  function isTaste(it) {
+    var m = data && data.taste;
+    var score = scoreOf(it.allSaleRnk, it.ccgSaleRnk);
+    if (isDestination(it, score)) return true;
+    if (!m || /\(주\)|㈜|주식회사/.test(it.merNm || '') && (it.merNm || '').indexOf('/') === -1) return false;
+    var f = tasteFeatures(it), z = m.intercept;
+    for (var i = 0; i < m.features.length; i++) z += m.coef[i] * (((f[m.features[i]] || 0) - m.mean[i]) / (m.scale[i] || 1));
+    return 1 / (1 + Math.exp(-z)) >= m.thr;
+  }
+
   // shared helpers for map.js
   window.MATJIP = { ROOT: ROOT, API: API, load: load, placeCard: placeCard, fromIndex: fromIndex, scoreOf: scoreOf,
     isBusy: isBusy, isPremium: isPremium, cleanName: cleanName, el: el, iconOf: iconOf, isChainName: isChainName,
-    bindToggles: bindToggles, toggleValues: toggleValues, custTags: custTags, data: function () { return data; } };
+    bindToggles: bindToggles, toggleValues: toggleValues, custTags: custTags, isTaste: isTaste, data: function () { return data; } };
 
   // ---------------------------------------------------------------- in-app browser notice
   // links opened inside chat apps may not keep the visit path
