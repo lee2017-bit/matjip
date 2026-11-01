@@ -16,7 +16,7 @@ const KAKAO_KEYWORD = 'https://k-skill-proxy.nomadamas.org/v1/kakao-map/search/k
 const DAILY_LIMIT = { parse: 30, answer: 40 };
 // 소개팅·데이트 자리 (AI가 놓쳐도 이 말이 있으면): 사이트가 20~30대 여성 손님이 많은 곳만 후보로 보낸다
 const DATE_RE = /소개팅|데이트|썸녀|썸남|썸 ?타|연인|여자 ?친구|여친|남자 ?친구|남친|기념일|프로포즈|커플|맞선|선 ?자리/;
-const PROMPT_V = 'v5';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
+const PROMPT_V = 'v6';  // 지시문을 바꾸면 올려서 캐시된 옛 답을 쓰지 않게
 
 const PARSE_SYS = `너는 맛집 질문을 분석해 JSON 하나만 출력한다. 설명이나 코드블록 없이 JSON만.
 형식: {"place":"","area":"","time":"","kind":"meal","foods":[],"avoid":[],"date":false,"talk":false,"premium":false,"group":false,"young":false,"female":false,"chain_ok":false,"situation":""}
@@ -138,10 +138,11 @@ async function ask(env, system, user, maxTokens, temperature) {
   let lastErr = null;
   for (const model of MODELS) {
     try {
-      const r = await env.AI.run(model, {
+      // 모델이 가끔 아주 느릴 때가 있어 15초가 넘으면 다음 모델로 넘어간다
+      const r = await Promise.race([env.AI.run(model, {
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
         max_tokens: maxTokens, temperature, chat_template_kwargs: { enable_thinking: false },
-      });
+      }), new Promise((_, rej) => setTimeout(() => rej(new Error('slow ' + model)), model === MODELS[0] ? 15000 : 20000))]);
       const j = toJson(r);
       if (j) return j;
       lastErr = new Error('no json from ' + model);
@@ -164,15 +165,28 @@ function toJson(r) {
   try { return JSON.parse(s.replace(/,\s*([}\]])/g, '$1')); } catch (e) { return null; }
 }
 
-// 장소 이름 → 좌표. 동네 이름(area)은 '성수동갈비골목' 같은 한 장소 대신 검색 결과들의 가운데(중앙값)를 쓴다
+async function kakao(query, size) {
+  const r = await fetch(KAKAO_KEYWORD + '?size=' + size + '&query=' + encodeURIComponent(query), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
+  if (!r.ok) return null;
+  const j = await r.json();
+  j.documents = (j.documents || []).filter(d => +d.y > 33 && +d.y < 39 && +d.x > 124 && +d.x < 132);
+  return j;
+}
+
+// 장소 이름 → 좌표. 동네 이름(area)은 ① 그 이름으로 시작하는 지하철역('종로' → 종로3가역, '성수동' → 성수역)
+// ② 없으면 검색 결과들의 가운데(중앙값). '성수동갈비골목' 같은 한 장소로 잡히지 않게
 async function findPlace(query, want, area) {
   try {
-    const r = await fetch(KAKAO_KEYWORD + '?size=' + (area ? 10 : 5) + '&query=' + encodeURIComponent(query), { headers: { 'User-Agent': 'maechul-matjip-worker/1.0' } });
-    if (!r.ok) return null;
-    const j = await r.json();
-    const docs = (j.documents || []).filter(d => +d.y > 33 && +d.y < 39 && +d.x > 124 && +d.x < 132);
-    if (!docs.length) return null;
     const w = norm(want);
+    if (area) {
+      const base = w.length > 2 ? w.replace(/동$/, '') : w;
+      const st = await kakao(want.replace(/\s+/g, ' ').trim().replace(/동$/, '') + '역', 5);
+      const s = st && st.documents.find(d => /지하철|전철/.test(d.category_name || '') && norm(d.place_name).indexOf(base) === 0);
+      if (s) return { name: want + ' (' + String(s.place_name).split(' ')[0] + ')', addr: s.road_address_name || s.address_name || '', lat: +(+s.y).toFixed(5), lng: +(+s.x).toFixed(5) };
+    }
+    const j = await kakao(query, area ? 10 : 5);
+    const docs = j ? j.documents : [];
+    if (!docs.length) return null;
     const exact = docs.find(x => norm(x.place_name) === w) || (!area && docs.find(x => norm(x.place_name).indexOf(w) === 0));
     if (area && !exact) {
       const mid = a => a.sort((x, y) => x - y)[a.length >> 1];

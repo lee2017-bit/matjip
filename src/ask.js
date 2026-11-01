@@ -154,10 +154,12 @@
     go.disabled = true; out.innerHTML = '';
     var qline = el('p', 'ask-q-line', q); out.appendChild(qline);
     status('질문을 읽는 중…');
+    var slow = setTimeout(function () { if (out.querySelector('.ask-status')) status('AI가 생각하는 중이에요… 처음 물어볼 때는 20초쯤 걸리기도 해요'); }, 8000);
     var loadData = M.load();
-    var parsed = here ? Promise.resolve({ intent: here.intent, place: { name: '내 위치', lat: here.lat, lng: here.lng, addr: '' } }) : withTimeout(post({ step: 'parse', q: q }), 25000);
+    var parsed = here ? Promise.resolve({ intent: here.intent, place: { name: '내 위치', lat: here.lat, lng: here.lng, addr: '' } }) : withTimeout(post({ step: 'parse', q: q }), 45000);
     parsed.then(function (r) {
       if (r._status && r._status !== 200) { fail(r.message || 'AI가 지금 답하지 못했어요. 잠시 뒤 다시 물어봐 주세요.'); return; }
+      clearTimeout(slow);
       var intent = r.intent || {}, place = r.place;
       if (/소개팅|데이트|기념일|연인|커플|여자 ?친구|여친|남자 ?친구|남친/.test(q)) intent.date = true;
       if (!place) { askWhere(q, intent); return; }
@@ -170,7 +172,7 @@
         var top = c.list.slice(0, 18);
         status('후보 ' + top.length + '곳 중에서 고르는 중…');
         var cands = top.map(function (p) { return { n: p.name, c: p.cat, s: p.score, d: Math.round(p.d), t: tagsOf(p, intent.date), h: p.hours || '' }; });
-        return withTimeout(post({ step: 'answer', q: q, intent: intent, place: { name: place.name }, cands: cands }), 30000)
+        return withTimeout(post({ step: 'answer', q: q, intent: intent, place: { name: place.name }, cands: cands }), 45000)
           .catch(function () { return { _status: 0 }; })
           .then(function (a) { show(q, intent, place, c, top, a); });
       });
