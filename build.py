@@ -64,6 +64,42 @@ GROUP_ICON = {"korean": "🍚", "meat": "🥩", "seafood": "🐟", "japanese": "
               "quick": "🍔", "drink": "🍺", "cafe": "☕", "etc": "🍽️"}
 
 
+# 카카오맵 교차검증 결과 (tools/kakao_check.py → data/kakao_check.json): eat.pl 업종(카드 가맹점 등록 업종)보다 실제에 가깝다
+KCHECK = json.loads((ROOT / "data" / "kakao_check.json").read_text()) if (ROOT / "data" / "kakao_check.json").exists() else {}
+
+
+def kakao_category(c: str, current: str) -> str:
+    """카카오 업종('음식점 > 양식 > 이탈리안')을 사이트 업종 이름(eat.pl 업종 체계)으로. 모르면 current."""
+    segs = [x.strip() for x in (c or "").split(">")]
+    top, sub = (segs[1] if len(segs) > 1 else ""), " ".join(segs[2:])
+    if segs[0] == "간식" or top == "간식":
+        sub = sub or top
+        return "기타베이커리" if re.search("제과|베이커리|빵|도넛", sub) else "아이스크림/요거트/빙수" if re.search("아이스크림|빙수", sub) else "떡/한과" if "떡" in sub else "카페"
+    rules = [("카페", "", "카페"), ("술집", "일본식주점", "이자카야"), ("술집", "칵테일|와인|바", "바(bar)"), ("술집", "호프|맥주|요리주점|포장마차", "호프"),
+             ("술집", "", "기타주점"), ("한식", "육류|고기|곱창|막창|족발|보쌈|닭", "고기구이"), ("한식", "해물|생선|회|조개|게|복어|장어", "횟집"),
+             ("한식", "국밥|해장국|설렁탕|곰탕|감자탕|찌개|전골|순대|추어", "찜/탕/찌개"), ("한식", "국수|냉면|칼국수|만두|수제비", "국수/면/만두"),
+             ("한식", "한정식|백반|쌈밥|비빔밥", "백반/한정식"), ("한식", "", "기타한식"), ("일식", "초밥|롤|회", "스시/초밥"),
+             ("일식", "돈까스|우동", "일식돈가스"), ("일식", "라멘|라면", "일식라멘"), ("일식", "", "기타일식"), ("중식", "", "기타중식"),
+             ("양식", "이탈리안|파스타", "이탈리아음식"), ("양식", "프랑스", "프랑스음식"), ("양식", "피자", "피자"), ("양식", "햄버거", "버거"),
+             ("양식", "멕시칸|브라질", "멕시칸"), ("양식", "", "기타외국식"), ("아시아음식", "", "아시안"), ("분식", "", "분식"),
+             ("패스트푸드", "", "버거"), ("치킨", "", "치킨"), ("도시락", "", "도시락/죽"), ("샐러드", "", "브런치카페/샐러드"),
+             ("뷔페", "", "뷔페"), ("퓨전요리", "", "기타외국식"), ("간식", "", "카페")]
+    for t, pat, cat in rules:
+        if top == t and (not pat or re.search(pat, sub)):
+            return cat
+    return current
+
+
+def kakao_label(c: str) -> str:
+    """카드에 보일 업종 이름: '음식점 > 한식 > 설렁탕' → '설렁탕', '음식점 > 카페 > 커피전문점 > 블루보틀' → '카페'."""
+    segs = [x.strip() for x in (c or "").split(">")]
+    if len(segs) < 2:
+        return ""
+    if segs[1] in ("카페", "간식") and len(segs) > 2:
+        return segs[2].replace(",", "·") if segs[1] == "간식" else "카페"
+    return (segs[2] if len(segs) > 2 else segs[1]).replace(",", "·")
+
+
 def icon_of(cat) -> str:
     return CAT_ICON.get(cat) or GROUP_ICON.get(GROUP_OF.get(cat, "etc"), "🍽️")
 GROUP_NAME = {key: name for key, name, _ in GROUPS}
@@ -502,10 +538,10 @@ def card(r: dict, rank: int) -> str:
     g = GROUP_OF.get(cat, "etc")
     lunch = open_for_lunch(r.get("srtTime") or "", r.get("endTime") or "") and g not in ("drink", "cafe")
     s = r["_score"]
-    premium = is_premium(r)
+    premium = is_premium(r) and not r.get("_knonfood")
     chain = is_chain(r)
     busy = is_busy(r)
-    talk = is_talk(r) or (premium and not busy) or bool(r.get("_tag_room"))
+    talk = (is_talk(r) or (premium and not busy) or bool(r.get("_tag_room"))) and not r.get("_knonfood")
     tags = [(k, t) for k, t, on in (
         ("pick", "주인장 픽", r.get("_pick")),
         ("taste", "주인장 취향", r.get("_taste")),
@@ -538,7 +574,7 @@ def card(r: dict, rank: int) -> str:
         more.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요. 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
                     + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
     more.append(f"<p>{esc(short_addr(r.get('merAddr')))}</p>")
-    sub = " · ".join(x for x in (f'<span class="cat">{esc(cat)}</span>', esc(where_short(r.get("merAddr"))), esc(hrs)) if x)
+    sub = " · ".join(x for x in (f'<span class="cat">{esc(r.get("_catlabel") or cat)}</span>', esc(where_short(r.get("merAddr"))), esc(hrs)) if x)
     tag_html = "".join(f'<span class="t {k}">{esc(t)}</span>' for k, t in tags)
     return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-a="{age_tags(r)}" data-s="{sex_tag(r)}" data-k="{'chain' if chain else 'indie'}" data-c="{esc(city_of(r.get('merAddr')))}">
 <div class="card-head"><span class="rank">{rank}</span><span class="ico" aria-hidden="true">{icon_of(cat)}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="score" title="매출점수"><b>{s}</b><small>{grade(s)}</small></span></div>
@@ -657,6 +693,17 @@ def main():
             return None
         if NOT_RESTAURANT.search(r.get("merNm") or "") or url in tags["exclude"] or (nm & tags["exclude"]):
             return None
+        k = KCHECK.get(mer_id(url))
+        if k and "none" not in k:
+            food = k.get("g") in ("FD6", "CE7") or (k.get("c") or "").startswith("음식점")
+            if food:
+                kc = kakao_category(k.get("c"), r.get("merTpbuzNm"))
+                if GROUP_OF.get(kc, "etc") != GROUP_OF.get(r.get("merTpbuzNm"), "etc"):
+                    r["_eatpl_cat"] = r.get("merTpbuzNm")
+                    r["merTpbuzNm"] = kc  # 업종 그룹이 다르면 카카오를 따른다 (예: 기타외국식 → 카페)
+                r["_catlabel"] = kakao_label(k.get("c"))
+            else:
+                r["_knonfood"] = True  # 카카오엔 회사·판매점 등으로만 나온다 → 추천 태그는 붙이지 않는다
         try:
             low = float(r.get("allSaleRnk")) > LOW_CUT
         except (TypeError, ValueError):
@@ -690,7 +737,7 @@ def main():
         if branch:
             brand_count[b] = brand_count.get(b, 0) + 1
     FRANCHISE.update(b for b, n in brand_count.items() if n >= CHAIN_MIN and len(b) >= 2)
-    prem = sorted((r for r in places.values() if is_premium(r)), key=lambda r: float(r.get("allSaleRnk") or 999))
+    prem = sorted((r for r in places.values() if is_premium(r) and not r.get("_knonfood")), key=lambda r: float(r.get("allSaleRnk") or 999))
     for i, r in enumerate(prem):
         r["_prem_rank"] = (i + 1, len(prem))
     # 주인장 취향: 픽이 아닌 가게 중 취향 일치도 상위 TASTE_TOP
@@ -698,7 +745,8 @@ def main():
     def corp_only(r):
         raw = r.get("merNm") or ""
         return bool(re.search(CORP, raw)) and "/" not in raw and not re.search(r"\(([^)]{2,})\)\s*$", raw.split("/")[0])
-    others = sorted((r for r in places.values() if not r["_pick"] and not corp_only(r)), key=lambda r: -taste_prob(r)) if TASTE else []
+    others = sorted((r for r in places.values() if not r["_pick"] and not corp_only(r) and not r.get("_knonfood")),
+                    key=lambda r: -taste_prob(r)) if TASTE else []
     taste_thr = 1.0
     gate_p = taste_prob(others[min(len(others) - 1, int(len(others) * DEST_GATE))]) if others else 1.0
     for i, r in enumerate(others):
@@ -780,7 +828,7 @@ def main():
                                              body, "picks.html", 0))
 
     # ---- 대화하기 좋은 곳
-    trows = [r for r in ranked if is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]]
+    trows = [r for r in ranked if (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) and not r.get("_knonfood")]
     if trows:
         cities = sorted({city_of(r.get("merAddr")) for r in trows}, key=lambda c: -sum(1 for r in trows if city_of(r.get("merAddr")) == c))
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(trows))
@@ -870,14 +918,19 @@ def main():
     # 압축 형식 (v2): [이름, 업종번호, 주소, 점수, 전국%, 구%, eat.pl id, 동네번호(-1), 플래그, 위도, 경도]
     # 플래그 비트: 1 주인장 픽, 2 아주 붐빔, 4 대화하기 좋은 곳, 8 고급 추정, 16 회식 적합, 32 프랜차이즈, 64 주인장 취향,
     # 128 20~30대 위주, 256/512/1024/2048 주 고객 20·30·40·50대+, 4096 여성 위주, 8192 남성 위주, 16384 남녀 고루. app.js load()가 풀어 쓴다.
-    cats = sorted({r.get("merTpbuzNm") or "" for r in ranked})
+    label = lambda r: r.get("_catlabel") or r.get("merTpbuzNm") or ""
+    cat_group = {}
+    for r in ranked:
+        cat_group.setdefault(label(r), GROUP_OF.get(r.get("merTpbuzNm"), "etc"))
+    cats = sorted(cat_group)
     cat_no = {c: i for i, c in enumerate(cats)}
     slugs = [a["slug"] for a in built_areas]
     area_no = {sl: i for i, sl in enumerate(slugs)}
 
     def flags(r):
-        talk = is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]
-        return ((1 if r["_pick"] else 0) | (2 if is_busy(r) else 0) | (4 if talk else 0) | (8 if is_premium(r) else 0)
+        nf = r.get("_knonfood")
+        talk = (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) and not nf
+        return ((1 if r["_pick"] else 0) | (2 if is_busy(r) else 0) | (4 if talk else 0) | (8 if is_premium(r) and not nf else 0)
                 | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0) | (64 if r.get("_taste") else 0)
                 | sum(bit for tag, bit in (("young", 128), ("20", 256), ("30", 512), ("40", 1024), ("50", 2048))
                       if tag in age_tags(r).split())
@@ -886,11 +939,11 @@ def main():
     def pos(r):
         ll = latlng(r)
         return [round(ll[0], 4), round(ll[1], 4)] if ll else [0, 0]
-    index = [[r["_name"], cat_no[r.get("merTpbuzNm") or ""], short_addr(r.get("merAddr")), r["_score"], r.get("allSaleRnk"),
+    index = [[r["_name"], cat_no[label(r)], short_addr(r.get("merAddr")), r["_score"], r.get("allSaleRnk"),
               r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), area_no.get(r["_area"], -1), flags(r), *pos(r)]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
-        {"v": 2, "cats": cats, "catGroup": [GROUP_OF.get(c, "etc") for c in cats],
+        {"v": 2, "cats": cats, "catGroup": [cat_group[c] for c in cats],
          "areas": [[sl, area_name[sl]] for sl in slugs], "groups": GROUP_NAME, "places": index,
          "chains": sorted(FRANCHISE), "chainKnown": list(CHAIN_KNOWN),
          "taste": ({k: TASTE[k] for k in ("features", "mean", "scale", "coef", "intercept")} | {"thr": taste_thr, "gate": gate_p}) if TASTE else None},

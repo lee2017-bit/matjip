@@ -274,7 +274,12 @@
     '빵/도넛': '🥐', '기타베이커리': '🥐', '아이스크림/요거트/빙수': '🍨', '떡/한과': '🍡', '뷔페': '🍽️', '해산물구이/찜': '🦀',
     '백반/한정식': '🍚', '기타한식': '🍚', '전/부침개': '🍚', '반찬가게': '🍚', '고기구이': '🥩', '횟집': '🐟', '기타일식': '🍣',
     '기타중식': '🥟', '기타외국식': '🍝', '푸드코트': '🍔', '휴게소': '🍔', '카페': '☕', '체험카페': '☕', '비건/채식/사찰': '🥗' };
-  function iconOf(cat) { return ICONS[cat] || '🍽️'; }
+  var GROUP_ICONS = { korean: '🍚', meat: '🥩', seafood: '🐟', japanese: '🍣', chinese: '🥟', western: '🍝', quick: '🍔', drink: '🍺', cafe: '☕' };
+  function iconOf(cat, group) {
+    if (ICONS[cat]) return ICONS[cat];
+    if (!group && data && data.cats) group = catGroupOf(cat);
+    return GROUP_ICONS[group] || '🍽️';
+  }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function placeCard(p) {
     // p: {name, cat, addr, score, all, ccg, url, area, pick, busy, talk, premium, chain, taste, note, q, lat, lng, live}
@@ -283,7 +288,7 @@
     li.id = 'p-' + String(p.url || '').split('/').pop();
     if (p.q) li.setAttribute('data-q', p.q);
     var head = el('div', 'card-head');
-    var ic = el('span', 'ico', iconOf(p.cat)); ic.setAttribute('aria-hidden', 'true'); head.appendChild(ic);
+    var ic = el('span', 'ico', iconOf(p.cat, p.g)); ic.setAttribute('aria-hidden', 'true'); head.appendChild(ic);
     head.appendChild(el('h3', '', p.name));
     var s = el('span', 'score'); s.appendChild(el('b', '', String(p.score))); s.appendChild(el('small', '', grade(p.score)));
     head.appendChild(s);
@@ -324,7 +329,7 @@
     li.appendChild(more);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17],
+  function fromIndex(p) { return { name: p[0], g: p[1], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17],
       mine: p[9] || p[17], ages: agesFromBits(p[18] || 0), sex: sexFromBits(p[18] || 0) }; }
   function agesFromBits(f) {
     return [['young', 128], ['20', 256], ['30', 512], ['40', 1024], ['50', 2048]].filter(function (x) { return f & x[1]; }).map(function (x) { return x[0]; });
