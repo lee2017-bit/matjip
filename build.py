@@ -395,6 +395,70 @@ def is_chain(r: dict) -> bool:
     return bool(first and len(first[0]) >= 3 and first[0].lower() in FRANCHISE)
 
 
+# 주인장 취향: 주인장 픽 vs 같은 건물의 다른 가게로 학습한 로지스틱 모델 (tools/taste_train.py → data/taste_model.json)
+TASTE = json.loads((ROOT / "data" / "taste_model.json").read_text()) if (ROOT / "data" / "taste_model.json").exists() else None
+TASTE_TOP = 0.10  # 취향 일치도 상위 10%에 '주인장 취향' 표시
+
+
+def taste_features(r: dict) -> dict:
+    """취향 모델 입력. tools/taste_train.py 도 이 함수를 그대로 쓴다."""
+    f = {}
+    a = float(r.get("allSaleRnk") or 99)
+    c = float(r.get("ccgSaleRnk") or 99)
+    f["log_all"] = math.log10(max(a, 0.01))
+    f["log_ccg"] = math.log10(max(c, 0.01))
+    f["all_minus_ccg"] = f["log_all"] - f["log_ccg"]
+    g = GROUP_OF.get(r.get("merTpbuzNm"), "etc")
+    for k in [k for k, _, _ in GROUPS] + ["etc"]:
+        f["g_" + k] = 1.0 if g == k else 0.0
+    f["local"] = 1.0 if r.get("loclPrsnPpltYn") else 0.0
+    f["foreign"] = 1.0 if r.get("frnrVsitYn") else 0.0
+    f["group_dinner"] = 1.0 if r.get("empyVsitYn") else 0.0
+    s, e = r.get("srtTime") or "", r.get("endTime") or ""
+    sh = int(s[:2]) + int(s[2:]) / 60 if len(s) == 4 and s.isdigit() else 11.0
+    eh = int(e[:2]) + int(e[2:]) / 60 if len(e) == 4 and e.isdigit() else 21.0
+    if eh < sh:
+        eh += 24
+    f["open_h"], f["close_h"], f["dur_h"] = sh, eh, eh - sh
+    hol = r.get("hldyDwk") or []
+    f["n_holiday"] = float(len(hol))
+    f["closed_weekend"] = 1.0 if ("토" in hol or "일" in hol) else 0.0
+    f["closed_mon"] = 1.0 if "월" in hol else 0.0
+    for k in ("점심", "저녁", "심야", "오전", "오후", "새벽"):
+        f["peak_" + k] = 1.0 if r.get("congestionTizn") == k else 0.0
+    f["peak_weekend"] = 1.0 if r.get("congestionDwk") in ("토", "일") else 0.0
+    cust = r.get("vistCstmrRnkList") or {}
+    ages, fem = [], 0
+    for k in ("rk01", "rk02", "rk03"):
+        v = cust.get(k) or ""
+        m = re.match(r"(\d+)대", v)
+        if m:
+            ages.append(int(m.group(1)))
+        fem += 1 if "여성" in v else 0
+    f["n_2030"] = float(sum(1 for x in ages if x in (20, 30)))
+    f["n_50p"] = float(sum(1 for x in ages if x >= 50))
+    f["top1_age"] = float(ages[0] if ages else 40)
+    f["n_female"] = float(fem)
+    f["chain"] = 1.0 if is_chain(r) else 0.0
+    f["premium"] = 1.0 if is_premium(r) else 0.0
+    n = clean_name(r.get("merNm"))
+    f["name_len"] = float(len(n))
+    f["name_latin"] = 1.0 if re.search(r"[A-Za-z]", n) else 0.0
+    f["name_oldschool"] = 1.0 if re.search(r"(식당|집|회관|가든|옥|정|관)$", n.replace(" ", "")) else 0.0
+    f["name_bonjeom"] = 1.0 if "본점" in (r.get("merNm") or "") else 0.0
+    return f
+
+
+def taste_prob(r: dict) -> float:
+    if not TASTE:
+        return 0.0
+    f = taste_features(r)
+    z = TASTE["intercept"]
+    for k, mu, sd, w in zip(TASTE["features"], TASTE["mean"], TASTE["scale"], TASTE["coef"]):
+        z += w * ((f.get(k, 0.0) - mu) / (sd or 1.0))
+    return 1 / (1 + math.exp(-max(min(z, 30), -30)))
+
+
 def card(r: dict, rank: int) -> str:
     cat = r.get("merTpbuzNm") or "기타"
     g = GROUP_OF.get(cat, "etc")
@@ -403,6 +467,8 @@ def card(r: dict, rank: int) -> str:
     tags = []
     if r.get("_pick"):
         tags.append('<span class="tag pick">주인장 픽</span>')
+    if r.get("_taste"):
+        tags.append(f'<span class="tag taste">주인장 취향 · 상위 {r["_taste_top"]}%</span>')
     premium = is_premium(r)
     chain = is_chain(r)
     talk = is_talk(r) or (premium and not is_busy(r)) or bool(r.get("_tag_room"))
@@ -422,7 +488,8 @@ def card(r: dict, rank: int) -> str:
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
     busy = is_busy(r)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
-                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk), ("premium", premium)) if on)
+                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk), ("premium", premium),
+                                    ("taste", r.get("_taste")), ("hidden", r.get("_taste") and s < 70)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
     notes = []
@@ -497,7 +564,7 @@ AGE_NAV = ('<nav class="filters" data-key="a" aria-label="주 고객">'
 
 
 def list_section(cards: str, present: set, cities: list | None = None, purpose: bool = True, default: str = "meal",
-                 chain_default: str = "indie") -> str:
+                 chain_default: str = "indie", extra: list | None = None) -> str:
     city_nav = ""
     if cities and len(cities) > 1:
         city_nav = ('<nav class="filters" data-key="c" aria-label="지역">'
@@ -513,7 +580,9 @@ def list_section(cards: str, present: set, cities: list | None = None, purpose: 
                        '<button type="button" data-v="premium">고급</button>'
                        '<button type="button" data-v="local">동네 맛집</button>'
                        '<button type="button" data-v="foreign">외국인 많이 가는 곳</button>'
-                       '<button type="button" data-v="pick">주인장 픽</button></nav>')
+                       '<button type="button" data-v="pick">주인장 픽</button>'
+                       '<button type="button" data-v="taste">주인장 취향</button>'
+                       + "".join(f'<button type="button" data-v="{k}">{esc(v)}</button>' for k, v in (extra or [])) + '</nav>')
     return f"""{city_nav}{AGE_NAV}<div class="sticky">
 <nav class="filters" data-key="g" aria-label="종류">{group_chips(present, default)}</nav>
 {purpose_nav}</div>
@@ -594,6 +663,17 @@ def main():
     prem = sorted((r for r in places.values() if is_premium(r)), key=lambda r: float(r.get("allSaleRnk") or 999))
     for i, r in enumerate(prem):
         r["_prem_rank"] = (i + 1, len(prem))
+    # 주인장 취향: 픽이 아닌 가게 중 취향 일치도 상위 TASTE_TOP
+    # 법인명으로만 등록된 가게('(주)○○푸드', '○○몰 주식회사')는 실제 간판을 알 수 없어 취향 추천에서 뺀다
+    def corp_only(r):
+        raw = r.get("merNm") or ""
+        return bool(re.search(CORP, raw)) and "/" not in raw and not re.search(r"\(([^)]{2,})\)\s*$", raw.split("/")[0])
+    others = sorted((r for r in places.values() if not r["_pick"] and not corp_only(r)), key=lambda r: -taste_prob(r)) if TASTE else []
+    for i, r in enumerate(others):
+        top = (i + 1) / len(others)
+        r["_taste"] = top <= TASTE_TOP
+        r["_taste_top"] = max(1, math.ceil(top * 100))
+        r["_taste_p"] = taste_prob(r)
 
     for a, items, fetched in area_rows:
         items.sort(key=lambda r: (-r["_score"], float(r.get("allSaleRnk") if r.get("allSaleRnk") is not None else 999)))
@@ -684,6 +764,25 @@ def main():
                                             "단체 회식이 없고 너무 붐비지 않는, 저녁에 조용히 대화하기 좋은 양식·일식·바. BC카드 결제 데이터로 골랐습니다.",
                                             body, "talk.html", 0))
 
+    # ---- 주인장 취향
+    tsrows = sorted((r for r in places.values() if r.get("_taste")), key=lambda r: -r["_taste_p"])
+    if tsrows:
+        cities = sorted({city_of(r.get("merAddr")) for r in tsrows}, key=lambda c: -sum(1 for r in tsrows if city_of(r.get("merAddr")) == c))
+        cards = "\n".join(card(r, i + 1) for i, r in enumerate(tsrows))
+        n_hidden = sum(1 for r in tsrows if r["_score"] < 70)
+        body = f"""
+<section class="hero small">
+  <p class="crumb"><a href="index.html">홈</a> › 주인장 취향</p>
+  <h1>주인장 취향 추천 <span>{len(tsrows):,}곳</span></h1>
+  <p class="sub">주인장이 모아 온 맛집 {len(prows)}곳과 같은 건물의 다른 가게들을 비교해 고르는 기준을 배운 뒤, 그 기준에 잘 맞는 집을 찾았어요. 주인장 맛집은 프랜차이즈가 거의 없고, 동네 주민보다 찾아오는 손님이 많고, 주말에도 열고, 저녁에 붐비는 단독 식당이 많아요.</p>
+  <p class="sub small-note">취향 일치도 상위 10%만 모았고, 그중 {n_hidden}곳은 매출점수가 70점 미만인 숨은 집이에요("70점 미만 숨은 집" 버튼). 한 사람의 취향을 따라 한 추천이라 참고로만 봐 주세요.</p>
+  <button type="button" class="share-page">이 목록 공유하기</button>
+</section>
+{list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in tsrows}, cities, default="", extra=[("hidden", "70점 미만 숨은 집")])}"""
+        (OUT / "taste.html").write_text(page(f"주인장 취향 추천 맛집 {len(tsrows):,}곳 — 점수 낮은 숨은 집까지 | {SITE_NAME}",
+                                             "주인장이 모아 온 맛집의 공통점을 배워 고른 단독 식당 추천. 매출점수는 낮아도 취향에 맞는 숨은 집까지.",
+                                             body, "taste.html", 0))
+
     # ---- 고급 추정
     if prem:
         cities = sorted({city_of(r.get("merAddr")) for r in prem}, key=lambda c: -sum(1 for r in prem if city_of(r.get("merAddr")) == c))
@@ -722,6 +821,7 @@ def main():
   <button type="button" data-v="quick">분식·간편식</button><button type="button" data-v="drink">술집</button>
   <button type="button" data-v="cafe">카페·디저트</button><button type="button" data-v="talk">대화하기 좋은 곳</button>
   <button type="button" data-v="premium">고급</button><button type="button" data-v="pick">주인장 픽</button>
+  <button type="button" data-v="taste">주인장 취향</button>
 </nav>
 <div id="map" class="map" role="region" aria-label="맛집 지도"></div>
 <div class="map-listhead"><p class="count" id="map-count"></p>
@@ -749,7 +849,7 @@ def main():
     def flags(r):
         talk = is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]
         return ((1 if r["_pick"] else 0) | (2 if is_busy(r) else 0) | (4 if talk else 0) | (8 if is_premium(r) else 0)
-                | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0))
+                | (16 if r.get("empyVsitYn") else 0) | (32 if is_chain(r) else 0) | (64 if r.get("_taste") else 0))
 
     def pos(r):
         ll = latlng(r)
@@ -782,7 +882,7 @@ def main():
 </section>
 <section class="browse">
   <h2>종류별 매출점수 순위</h2>
-  <div class="chips">{cats}<a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
+  <div class="chips">{cats}<a class="chip taste" href="taste.html">주인장 취향 추천</a><a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
 </section>
 <div id="areas"><h2 class="section-title">동네별 점심·회식 맛집 <small>{len(built_areas)}개 동네 · 눌러서 펼치기</small></h2>
 {''.join(groups)}</div>
@@ -795,6 +895,7 @@ def main():
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
     <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
     <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 포함해요. <a href="talk.html">모아 보기</a></li>
+    <li><strong>주인장 취향</strong> — 주인장 맛집과 같은 건물의 다른 가게를 비교해 배운 기준(프랜차이즈 아님, 찾아오는 손님, 주말 영업, 저녁 손님 등)에 잘 맞는 상위 10%예요. 매출점수가 낮아도 표시돼요. <a href="taste.html">모아 보기</a></li>
     <li><strong>고급 추정</strong> — 오마카세·파인다이닝·비스트로·한우 등 가격대가 있어 보이는 집이에요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서 고급 업장끼리 순위를 따로 보여 드려요. <a href="premium.html">모아 보기</a></li>
   </ul>
 </section>"""
@@ -803,7 +904,7 @@ def main():
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
 
     if BASE_URL:
-        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html"]
+        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html", f"{BASE_URL}/map.html", f"{BASE_URL}/taste.html"]
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)

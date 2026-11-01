@@ -119,3 +119,9 @@ details.city summary h2::after{content:"▾";font-size:14px;color:var(--muted)}
 details.city:not([open]) summary h2::after{content:"▸"}
 .section-title small{font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
 @media (max-width:600px){#areas .tiles{grid-template-columns:1fr 1fr;gap:8px}#areas .tile{padding:10px 12px}#areas .tile strong{font-size:15px}#areas .tile span{font-size:12px}}
+.tag.taste{background:#efe9fb;color:#5b3fa8;font-weight:700}
+@media (prefers-color-scheme:dark){.tag.taste{background:#251d38;color:#c4b2f2}}
+.chip.taste{border-color:#5b3fa8;color:#5b3fa8;font-weight:700}
+@media (prefers-color-scheme:dark){.chip.taste{border-color:#c4b2f2;color:#c4b2f2}}
+.actions .go{flex-basis:100%}
+.actions .map-btn,.actions .share{margin-left:0}

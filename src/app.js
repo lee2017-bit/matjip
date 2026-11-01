@@ -221,7 +221,7 @@
         d.places = d.places.map(function (q) {
           var f = q[8];
           return [q[0], d.catGroup[q[1]], d.cats[q[1]], q[2], q[3], q[4], q[5], q[6], q[7] >= 0 ? areaSlug[q[7]] : '',
-            f & 1 ? 1 : 0, f & 2 ? 1 : 0, f & 4 ? 1 : 0, f & 8 ? 1 : 0, f & 16 ? 1 : 0, q[9], q[10], f & 32 ? 1 : 0];
+            f & 1 ? 1 : 0, f & 2 ? 1 : 0, f & 4 ? 1 : 0, f & 8 ? 1 : 0, f & 16 ? 1 : 0, q[9], q[10], f & 32 ? 1 : 0, f & 64 ? 1 : 0];
         });
         d.areas = areaMap;
       }
@@ -268,6 +268,7 @@
     }
     li.appendChild(m);
     if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
+    if (p.taste) li.appendChild(el('span', 'tag taste', '주인장 취향'));
     if (p.premium) li.appendChild(el('span', 'tag premium', '고급 추정'));
     if (p.chain) li.appendChild(el('span', 'tag chain', '프랜차이즈'));
     if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
@@ -283,7 +284,7 @@
     li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13], lat: p[14], lng: p[15], chain: p[16], taste: p[17] }; }
 
   function liveButton(term, box) {
     if (!API) {

@@ -34,6 +34,7 @@
     if (filter === 'talk') return !!p.talk;
     if (filter === 'premium') return !!p.premium;
     if (filter === 'pick') return !!p.pick;
+    if (filter === 'taste') return !!p.taste;
     return p.g === filter;
   }
   function color(s) { return s >= 90 ? '#c2410c' : s >= 80 ? '#ea580c' : s >= 70 ? '#fb923c' : s >= 60 ? '#fdba74' : '#a8a29e'; }
