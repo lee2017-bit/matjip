@@ -213,7 +213,9 @@ def is_busy(r: dict) -> bool:
     return p <= 0.5 or (p <= 1 and bool(r.get("empyVsitYn")))
 
 
-BUSY_NOTE = "아주 붐비는 집 · 점수는 높지만 조용히 대화하기엔 다소 시끄러울 수 있어요"
+BUSY_NOTE = "아주 붐비는 집 · 홀은 대화하기엔 시끄러울 수 있어요"
+BUSY_ROOM_GROUP = "단체석·룸이 있을 가능성이 높으니 예약 때 물어보세요"
+BUSY_ROOM = "조용한 자리라면 룸이 있는지 확인해 보세요"
 
 # 대화하기 좋은 곳: 결제 데이터로 추정한 '조용히 이야기 나누기 좋은 집' (전체의 약 6%)
 TALK_CATS = {"이탈리아음식", "프랑스음식", "기타외국식", "아시안", "멕시칸", "스시/초밥", "기타일식", "브런치카페/샐러드", "바(bar)"}
@@ -240,6 +242,36 @@ def is_talk(r: dict) -> bool:
     return (end < srt or end >= "2030") and srt >= "1030" and young
 
 
+# 고급·가격대 높음(추정): 가격 정보가 없어 이름·업종·영업 패턴으로 추정한다.
+PREMIUM_KW = re.compile(r"오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|코스|한우|와규|wagyu|"
+                        r"스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|"
+                        r"셰프|chef|chez|레스토랑|restaurant|스키야키|한정식", re.I)
+PREMIUM_NOT = re.compile(r"정육|해장|곱창|국밥|순대|분식|뷔페|식당$")
+PREMIUM_BAD_CATS = {"카페", "분식", "김밥전문점", "치킨", "버거", "피자", "호프", "기타주점", "빵/도넛", "기타베이커리",
+                    "샌드위치/토스트", "도시락/죽", "브런치카페/샐러드", "푸드코트", "휴게소", "뷔페"}
+
+
+def is_premium(r: dict) -> bool:
+    """이름에 오마카세·다이닝·비스트로·한우·스테이크하우스 등이 있거나 프랑스음식, '스시○○' 같은 단독 스시집이고,
+    체인 지점·쇼핑몰이 아니며, 점심~저녁 위주로 영업(11시 이후 시작, 23시 반 전 마감)하고,
+    같은 업종 매출 상위 70% 안에 드는 곳. 확인된 목록(data/tags.json)이 있으면 그것도 포함."""
+    if r.get("_tag_premium"):
+        return True
+    name = clean_name(r.get("merNm"))
+    cat = r.get("merTpbuzNm") or ""
+    if cat in PREMIUM_BAD_CATS or TALK_CHAIN.search(name.replace(" ", "")) or PREMIUM_NOT.search(name.replace(" ", "")):
+        return False
+    try:
+        p = float(r.get("allSaleRnk"))
+    except (TypeError, ValueError):
+        return False
+    srt, end = r.get("srtTime") or "", r.get("endTime") or ""
+    if not srt or not end or srt < "1100" or end < srt or end > "2330" or p > 70:
+        return False
+    sushi = cat in ("스시/초밥", "기타일식") and re.match(r"^스시\s?\S{1,4}$", name)
+    return bool(PREMIUM_KW.search(r.get("merNm") or "") or cat == "프랑스음식" or sushi)
+
+
 def mer_id(url) -> str:
     return str(url or "").rstrip("/").rsplit("/", 1)[-1]
 
@@ -252,7 +284,12 @@ def card(r: dict, rank: int) -> str:
     tags = []
     if r.get("_pick"):
         tags.append('<span class="tag pick">주인장 픽</span>')
-    talk = is_talk(r)
+    premium = is_premium(r)
+    talk = is_talk(r) or (premium and not is_busy(r)) or bool(r.get("_tag_room"))
+    if r.get("_tag_room"):
+        tags.append('<span class="tag room">룸 있음</span>')
+    if premium:
+        tags.append(f'<span class="tag premium">{"고급" if r.get("_tag_premium") else "고급 추정"}</span>')
     if talk:
         tags.append('<span class="tag talk">대화하기 좋은 곳</span>')
     for on, t in ((r.get("empyVsitYn"), "회식 적합"), (r.get("loclPrsnPpltYn"), "동네 맛집"), (r.get("frnrVsitYn"), "외국인 방문")):
@@ -263,10 +300,18 @@ def card(r: dict, rank: int) -> str:
     peak = " ".join(x for x in (f"{r.get('congestionDwk')}요일" if r.get("congestionDwk") else "", r.get("congestionTizn") or "") if x)
     busy = is_busy(r)
     flags = " ".join(f for f, on in (("lunch", lunch), ("group", r.get("empyVsitYn")), ("local", r.get("loclPrsnPpltYn")),
-                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk)) if on)
+                                    ("foreign", r.get("frnrVsitYn")), ("pick", r.get("_pick")), ("busy", busy), ("talk", talk), ("premium", premium)) if on)
     gs = g + ("" if g in ("drink", "cafe") else " meal")
     hrs = hours(r.get("srtTime") or "", r.get("endTime") or "")
-    note = f'<p class="note">{BUSY_NOTE}</p>' if busy else ""
+    notes = []
+    if busy:
+        room = "" if r.get("_tag_room") else (BUSY_ROOM_GROUP if r.get("empyVsitYn") else BUSY_ROOM)
+        notes.append(f'<p class="note busy">{BUSY_NOTE}{(" · " + room) if room else ""}</p>')
+    if premium and s < 75:
+        rk = r.get("_prem_rank")
+        notes.append('<p class="note premium">가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'
+                     + (f' (고급 추정 {rk[1]}곳 중 매출 {rk[0]}위)' if rk else '') + '</p>')
+    note = "".join(notes)
     return f"""<li class="card" id="p-{esc(mer_id(r.get('merUrl')))}" data-f="{esc(flags)}" data-g="{gs}" data-c="{esc(city_of(r.get('merAddr')))}">
   <div class="card-head"><span class="rank">{rank}</span><h3>{esc(r.get('_name') or clean_name(r.get('merNm')))}</h3><span class="cat">{esc(cat)}</span>
   <span class="score" title="매출점수"><b>{s}</b>점<small>{grade(s)}</small></span></div>
@@ -328,6 +373,7 @@ def list_section(cards: str, present: set, cities: list | None = None, purpose: 
                        '<button type="button" data-v="lunch">점심 영업</button>'
                        '<button type="button" data-v="group">회식</button>'
                        '<button type="button" data-v="talk">대화하기 좋은 곳</button>'
+                       '<button type="button" data-v="premium">고급</button>'
                        '<button type="button" data-v="local">동네 맛집</button>'
                        '<button type="button" data-v="foreign">외국인 많이 가는 곳</button>'
                        '<button type="button" data-v="pick">주인장 픽</button></nav>')
@@ -346,6 +392,9 @@ def main():
     areas = json.loads((ROOT / "areas.json").read_text())
     picks = json.loads(PICKS.read_text()) if PICKS.exists() else {"picks": [], "items": []}
     pick_name = {p["merUrl"]: p["name"] for p in picks.get("picks", [])}
+    tag_file = ROOT / "data" / "tags.json"
+    tdata = json.loads(tag_file.read_text()) if tag_file.exists() else {}
+    tags = {k: set(tdata.get(k) or []) for k in ("room", "premium")}  # merUrl 또는 가게 이름
 
     OUT.mkdir(exist_ok=True)
     for d in ("area", "cat", "assets"):
@@ -359,11 +408,16 @@ def main():
 
     def prep(r):
         url = r.get("merUrl") or ""
-        if not url.startswith("https://web.paybooc.ai/") or (r.get("merTpbuzNm") in SKIP_CATS):
+        if not url.startswith("https://web.paybooc.ai/"):
             return None
         if url in places:
             return places[url]
         r = dict(r)
+        nm = {clean_name(r.get("merNm")), pick_name.get(url, "")}
+        r["_tag_room"] = url in tags["room"] or bool(nm & tags["room"])
+        r["_tag_premium"] = url in tags["premium"] or bool(nm & tags["premium"])
+        if r.get("merTpbuzNm") in SKIP_CATS and not is_premium(r):
+            return None
         r["_score"] = score_of(r)
         r["_pick"] = url in pick_name
         r["_name"] = pick_name.get(url) or clean_name(r.get("merNm"))
@@ -371,7 +425,7 @@ def main():
         places[url] = r
         return r
 
-    index_cards, latest, built_areas = {}, "", []
+    index_cards, latest, built_areas, area_rows = {}, "", [], []
     for a in areas:
         raw, fetched = area_items(a, refresh)
         items = [x for x in (prep(r) for r in raw) if x]
@@ -382,6 +436,14 @@ def main():
         for r in items:
             r["_area"] = r["_area"] or a["slug"]
         latest = max(latest, fetched)
+        area_rows.append((a, items, fetched))
+    for r in picks.get("items", []):
+        prep(r)
+    prem = sorted((r for r in places.values() if is_premium(r)), key=lambda r: float(r.get("allSaleRnk") or 999))
+    for i, r in enumerate(prem):
+        r["_prem_rank"] = (i + 1, len(prem))
+
+    for a, items, fetched in area_rows:
         items.sort(key=lambda r: (-r["_score"], float(r.get("allSaleRnk") if r.get("allSaleRnk") is not None else 999)))
         print(f"{a['slug']:16s} {len(items):3d} places")
         updated = fetched[:10]
@@ -409,8 +471,6 @@ def main():
         (OUT / "area" / f"{a['slug']}.html").write_text(page(title, desc, body, f"area/{a['slug']}.html", 1))
         index_cards.setdefault(a["city"], []).append((a, len(items), top3))
 
-    for r in picks.get("items", []):
-        prep(r)
     area_name = {a["slug"]: a["name"] for a in built_areas}
 
     ranked = sorted(places.values(), key=lambda r: (-r["_score"], float(r.get("allSaleRnk") or 999)))
@@ -455,7 +515,7 @@ def main():
                                              body, "picks.html", 0))
 
     # ---- 대화하기 좋은 곳
-    trows = [r for r in ranked if is_talk(r)]
+    trows = [r for r in ranked if is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]]
     if trows:
         cities = sorted({city_of(r.get("merAddr")) for r in trows}, key=lambda c: -sum(1 for r in trows if city_of(r.get("merAddr")) == c))
         cards = "\n".join(card(r, i + 1) for i, r in enumerate(trows))
@@ -472,9 +532,28 @@ def main():
                                             "단체 회식이 없고 너무 붐비지 않는, 저녁에 조용히 대화하기 좋은 양식·일식·바. BC카드 결제 데이터로 골랐습니다.",
                                             body, "talk.html", 0))
 
+    # ---- 고급 추정
+    if prem:
+        cities = sorted({city_of(r.get("merAddr")) for r in prem}, key=lambda c: -sum(1 for r in prem if city_of(r.get("merAddr")) == c))
+        cards = "\n".join(card(r, i + 1) for i, r in enumerate(prem))
+        body = f"""
+<section class="hero small">
+  <p class="crumb"><a href="index.html">홈</a> › 고급·가격대 있는 집</p>
+  <h1>가격대 있는 고급 맛집 <span>{len(prem)}곳</span></h1>
+  <p class="sub">오마카세, 파인다이닝, 비스트로, 한우·스테이크하우스처럼 가격대가 있는 집을 모았어요. 이런 곳은 손님 수가 적어 매출점수가 낮게 나오기 쉬워서, 여기서는 고급 업장끼리 매출 순으로 줄 세웠습니다.</p>
+  <p class="sub small-note">결제 데이터에는 가격 정보가 없어서 가게 이름·업종·영업 시간 패턴으로 추정했어요. 체인 지점과 쇼핑몰 매장은 뺐습니다. 실제 가격은 eat.pl이나 예약 앱에서 확인해 주세요.</p>
+  <button type="button" class="share-page">이 목록 공유하기</button>
+</section>
+{list_section(cards, {GROUP_OF.get(r.get('merTpbuzNm'), 'etc') for r in prem}, cities, purpose=False, default="")}"""
+        (OUT / "premium.html").write_text(page(f"오마카세·파인다이닝 등 고급 맛집 {len(prem)}곳 매출 순위 | {SITE_NAME}",
+                                               "오마카세, 파인다이닝, 비스트로, 한우·스테이크하우스 등 가격대 있는 집을 BC카드 결제 매출로 줄 세웠습니다.",
+                                               body, "premium.html", 0))
+
     # ---- search index (loaded lazily by the home page search box)
     index = [[r["_name"], GROUP_OF.get(r.get("merTpbuzNm"), "etc"), r.get("merTpbuzNm") or "", short_addr(r.get("merAddr")),
-              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0, 1 if is_talk(r) else 0]
+              r["_score"], r.get("allSaleRnk"), r.get("ccgSaleRnk"), r.get("merUrl").replace(MER_PREFIX, "", 1), r["_area"], 1 if r["_pick"] else 0, 1 if is_busy(r) else 0,
+              1 if (is_talk(r) or (is_premium(r) and not is_busy(r)) or r["_tag_room"]) else 0, 1 if is_premium(r) else 0,
+              1 if r.get("empyVsitYn") else 0]
              for r in ranked]
     (OUT / "assets" / "places.json").write_text(json.dumps(
         {"areas": area_name, "groups": GROUP_NAME, "places": index}, ensure_ascii=False, separators=(",", ":")))
@@ -497,7 +576,7 @@ def main():
 </section>
 <section class="browse">
   <h2>종류별 매출점수 순위</h2>
-  <div class="chips">{cats}<a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
+  <div class="chips">{cats}<a class="chip talk" href="talk.html">조용히 대화하기 좋은 곳</a><a class="chip premium" href="premium.html">고급·가격대 있는 집</a><a class="chip pick" href="picks.html">주인장 픽 {len(prows)}곳</a></div>
 </section>
 <div id="areas"><h2 class="section-title">동네별 점심·회식 맛집</h2>
 {''.join(groups)}</div>
@@ -508,7 +587,8 @@ def main():
     <li><strong>전국구 90+ · 찐맛집 80+ · 동네 강자 70+ · 꾸준한 집 60+</strong> — 맛 평가가 아니라 판매량 기준이라, 좌석이 적은 집이나 예약제 식당은 낮게 나올 수 있어요.</li>
     <li><strong>회식 적합</strong> — 저녁 시간대 단체 결제가 있었던 곳. <strong>동네 맛집</strong> — 동네 손님 비율이 구 평균보다 높은 곳.</li>
     <li><strong>아주 붐비는 집</strong> — 전국 같은 업종 매출 상위 0.5% 안(회식 적합이면 1% 안)인 곳이에요. 인기는 확실하지만 조용히 대화할 자리라면 붐비는 시간을 피하는 게 좋아요.</li>
-    <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. <a href="talk.html">모아 보기</a></li>
+    <li><strong>대화하기 좋은 곳</strong> — 양식·일식·바 같은 업종 중 단체 회식 결제가 없고, 아주 붐비는 집이 아니며, 저녁까지 영업하고 20~30대 손님이 많은 곳이에요. 고급 업장과 룸이 있는 집도 포함해요. <a href="talk.html">모아 보기</a></li>
+    <li><strong>고급 추정</strong> — 오마카세·파인다이닝·비스트로·한우 등 가격대가 있어 보이는 집이에요. 손님 수가 적어 매출점수가 낮게 나오기 쉬워서 고급 업장끼리 순위를 따로 보여 드려요. <a href="premium.html">모아 보기</a></li>
   </ul>
 </section>"""
     title = f"{SITE_NAME} — 우리 동네 맛집 매출점수 검색, 점심·회식 맛집 순위"
@@ -516,7 +596,7 @@ def main():
     (OUT / "index.html").write_text(page(title, desc, body, "index.html", 0))
 
     if BASE_URL:
-        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html"]
+        urls = ([f"{BASE_URL}/index.html", f"{BASE_URL}/picks.html", f"{BASE_URL}/talk.html", f"{BASE_URL}/premium.html"]
                 + [f"{BASE_URL}/area/{a['slug']}.html" for a in built_areas]
                 + [f"{BASE_URL}/cat/{k}.html" for k, _, _ in cat_links])
         sm = "".join(f"<url><loc>{esc(u)}</loc><lastmod>{latest[:10]}</lastmod></url>" for u in urls)

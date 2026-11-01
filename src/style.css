@@ -65,7 +65,8 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .chip{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);text-decoration:none;font-size:14px}
 .chip:hover{border-color:var(--accent)}.chip.pick{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .note{display:inline-block;margin:4px 0 2px;padding:2px 8px;border-radius:8px;background:var(--tag);color:var(--muted);font-size:12px;line-height:1.5}
-.note::before{content:"🔊 "}
+.note.busy::before{content:"🔊 "}
+.note.premium::before{content:"🍷 "}
 .actions{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 .actions .go{margin-top:0}
 .share{margin-left:auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font-size:13px}
@@ -82,3 +83,8 @@ footer{max-width:860px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);f
 .chip.talk{border-color:#2f6b4f;color:#2f6b4f;font-weight:700}
 @media (prefers-color-scheme:dark){.chip.talk{border-color:#8fd1ae;color:#8fd1ae}}
 .small-note{font-size:13px}
+.tag.premium{background:#f3ecdf;color:#7a5a1e;font-weight:700}
+.tag.room{background:#e9eef7;color:#2f4f86;font-weight:700}
+@media (prefers-color-scheme:dark){.tag.premium{background:#2e2717;color:#e3c27f}.tag.room{background:#1b2333;color:#9db8e8}}
+.chip.premium{border-color:#7a5a1e;color:#7a5a1e;font-weight:700}
+@media (prefers-color-scheme:dark){.chip.premium{border-color:#e3c27f;color:#e3c27f}}

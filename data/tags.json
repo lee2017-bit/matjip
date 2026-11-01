@@ -1,0 +1,5 @@
+{
+  "_help": "주인장이 직접 확인한 정보. 값은 eat.pl 주소(merUrl) 또는 사이트에 보이는 가게 이름. room = 룸 있음, premium = 고급(확인)",
+  "room": [],
+  "premium": []
+}

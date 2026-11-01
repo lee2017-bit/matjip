@@ -28,7 +28,34 @@
   function pct(v) { var f = parseFloat(v); return isNaN(f) ? '-' : (f < 1 ? f.toFixed(2) : f.toFixed(1)); }
   // 아주 붐비는 집 (same rule as is_busy in build.py)
   function isBusy(all, group) { var p = parseFloat(all); return !isNaN(p) && (p <= 0.5 || (p <= 1 && !!group)); }
-  var BUSY_NOTE = '아주 붐비는 집 · 점수는 높지만 조용히 대화하기엔 다소 시끄러울 수 있어요';
+  // keep in sync with BUSY_NOTE / BUSY_ROOM* and is_premium() in build.py
+  var BUSY_NOTE = '아주 붐비는 집 · 홀은 대화하기엔 시끄러울 수 있어요';
+  var BUSY_ROOM_GROUP = '단체석·룸이 있을 가능성이 높으니 예약 때 물어보세요';
+  var BUSY_ROOM = '조용한 자리라면 룸이 있는지 확인해 보세요';
+  var PREMIUM_KW = /오마카세|omakase|우마카세|다이닝|dining|비스트로|bistro|프렌치|french|코스|한우|와규|wagyu|스테이크하우스|steak ?house|가이세키|갓포|鮨|철판|teppan|트라토리아|오스테리아|리스토란테|ristorante|셰프|chef|chez|레스토랑|restaurant|스키야키|한정식/i;
+  var PREMIUM_NOT = /정육|해장|곱창|국밥|순대|분식|뷔페|식당$/;
+  var CHAIN = /(?:^|[^본])점(\)|$)|지점|신세계|현대백화점|롯데|몰|타임스퀘어|스타필드|아이파크|코엑스/;
+  var PREMIUM_BAD = ['카페', '분식', '김밥전문점', '치킨', '버거', '피자', '호프', '기타주점', '빵/도넛', '기타베이커리', '샌드위치/토스트', '도시락/죽', '브런치카페/샐러드', '푸드코트', '휴게소', '뷔페'];
+  function isPremium(it) {
+    var name = cleanName(it.merNm), flat = name.replace(/\s/g, ''), cat = it.merTpbuzNm || '';
+    var p = parseFloat(it.allSaleRnk), s = it.srtTime || '', e = it.endTime || '';
+    if (PREMIUM_BAD.indexOf(cat) !== -1 || CHAIN.test(flat) || PREMIUM_NOT.test(flat) || isNaN(p) || p > 70) return false;
+    if (!s || !e || s < '1100' || e < s || e > '2330') return false;
+    var sushi = (cat === '스시/초밥' || cat === '기타일식') && /^스시\s?\S{1,4}$/.test(name);
+    return PREMIUM_KW.test(it.merNm || '') || cat === '프랑스음식' || sushi;
+  }
+  function cleanName(n) {
+    var parts = String(n || '').split('/').map(function (x) {
+      var hadCorp = /\(주\)|㈜|주식회사/.test(x);
+      x = x.replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g, ' ');
+      var m = /\(([^)]{2,})\)\s*$/.exec(x);
+      if (m && hadCorp) x = m[1];
+      return x.replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+    if (!parts.length) return String(n || '');
+    if (parts[0].length <= 2 && parts.length > 1) return parts.slice(1).sort(function (a, b) { return b.length - a.length; })[0];
+    return parts[0];
+  }
   var MER = 'https://web.paybooc.ai/mer/web/profile/';
 
   // ---------------------------------------------------------------- sharing
@@ -186,7 +213,8 @@
     if (p.note) li.appendChild(el('p', 'meta where', p.note));
     var nums = el('p', 'nums'); nums.appendChild(el('strong', '', '전국 같은 업종 매출 상위 ' + pct(p.all) + '%')); nums.appendChild(document.createTextNode(' · 구 안에서 상위 ' + pct(p.ccg) + '%'));
     li.appendChild(nums);
-    if (p.busy) li.appendChild(el('p', 'note', BUSY_NOTE));
+    if (p.busy) li.appendChild(el('p', 'note busy', BUSY_NOTE + ' · ' + (p.group ? BUSY_ROOM_GROUP : BUSY_ROOM)));
+    if (p.premium && p.score < 75) li.appendChild(el('p', 'note premium', '가격대가 높은 소규모 업장으로 보여요 · 손님 수가 적어 매출점수가 낮게 나오는 유형이에요'));
     var m = el('p', 'meta', p.addr || '');
     if (p.area && data && data.areas[p.area]) {
       m.appendChild(document.createTextNode(' · '));
@@ -194,6 +222,7 @@
     }
     li.appendChild(m);
     if (p.pick) li.appendChild(el('span', 'tag pick', '주인장 픽'));
+    if (p.premium) li.appendChild(el('span', 'tag premium', '고급 추정'));
     if (p.talk) li.appendChild(el('span', 'tag talk', '대화하기 좋은 곳'));
     var act = el('div', 'actions');
     var go = el('a', 'go', 'eat.pl에서 자세히 보기 →'); go.href = p.url; go.target = '_blank'; go.rel = 'noopener';
@@ -202,7 +231,7 @@
     li.appendChild(act);
     return li;
   }
-  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11] }; }
+  function fromIndex(p) { return { name: p[0], cat: p[2], addr: p[3], score: p[4], all: p[5], ccg: p[6], url: (p[7].indexOf('https://') === 0 ? '' : MER) + p[7], area: p[8], pick: p[9], busy: p[10], talk: p[11], premium: p[12], group: p[13] }; }
 
   function liveButton(term, box) {
     if (!API) {
@@ -213,18 +242,19 @@
     b.type = 'button';
     b.onclick = function () {
       b.disabled = true; b.textContent = '찾는 중… (최대 10초)';
+      if (box.querySelector('.hint')) box.querySelector('.hint').remove();
       fetch(API + '/?q=' + encodeURIComponent(term)).then(function (r) { return r.json(); }).then(function (d) {
         var ul = el('ol', 'list');
         var found = 0;
         (d.results || []).forEach(function (x) {
           if (!x.item || !x.item.merUrl) return;
           var it = x.item; found++;
-          ul.appendChild(placeCard({ name: x.place && x.place.name || it.merNm, cat: it.merTpbuzNm, addr: x.place && x.place.addr || it.merAddr,
+          ul.appendChild(placeCard({ name: cleanName(it.merNm), cat: it.merTpbuzNm, addr: String(it.merAddr || '').replace(/\(.*?\)/g, '').split(',')[0].trim(),
             score: scoreOf(it.allSaleRnk, it.ccgSaleRnk), all: it.allSaleRnk, ccg: it.ccgSaleRnk, url: it.merUrl, note: '실시간 조회 결과',
-            busy: isBusy(it.allSaleRnk, it.empyVsitYn), q: term }));
+            busy: isBusy(it.allSaleRnk, it.empyVsitYn), group: !!it.empyVsitYn, premium: isPremium(it), q: term }));
         });
         b.remove();
-        if (found) box.appendChild(ul);
+        if (found) { box.appendChild(el('p', 'count', 'BC카드 결제 데이터에서 ' + found + '곳을 찾았어요')); box.appendChild(ul); }
         else box.appendChild(el('p', 'hint', d.message || 'BC카드 결제 데이터에서 이 가게를 찾지 못했어요. 이름을 조금 다르게(지점명 포함) 검색해 보세요.'));
       }).catch(function () { b.disabled = false; b.textContent = '다시 시도'; });
     };

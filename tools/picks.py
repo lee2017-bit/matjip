@@ -93,8 +93,13 @@ def main():
 
     places, seen = [], set()
     for fid in args.folders:
-        d = get_json(f"https://map.kakao.com/favorite/list?folderid={fid}",
-                     {"Referer": "https://map.kakao.com/", "Accept-Language": "ko-KR,ko;q=0.9"})
+        cached = raw / f"kakao_{fid}.json"
+        if args.offline and cached.exists():
+            d = json.loads(cached.read_text())
+        else:
+            d = get_json(f"https://map.kakao.com/favorite/list?folderid={fid}",
+                         {"Referer": "https://map.kakao.com/", "Accept-Language": "ko-KR,ko;q=0.9"})
+            cached.write_text(json.dumps(d, ensure_ascii=False))
         for f in d.get("favorites", []):
             if f.get("type") == "PLACE" and f["key"] not in seen:
                 seen.add(f["key"])
