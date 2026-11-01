@@ -109,8 +109,8 @@ def kakao_category(c: str, current: str) -> str:
         sub = sub or top
         return "기타베이커리" if re.search("제과|베이커리|빵|도넛", sub) else "아이스크림/요거트/빙수" if re.search("아이스크림|빙수", sub) else "떡/한과" if "떡" in sub else "카페"
     rules = [("카페", "", "카페"), ("술집", "일본식주점", "이자카야"), ("술집", "칵테일|와인|바", "바(bar)"), ("술집", "호프|맥주|요리주점|포장마차", "호프"),
-             ("술집", "", "기타주점"), ("한식", "육류|고기|곱창|막창|족발|보쌈|닭", "고기구이"), ("한식", "해물|생선|회|조개|게|복어|장어", "횟집"),
-             ("한식", "국밥|해장국|설렁탕|곰탕|감자탕|찌개|전골|순대|추어", "찜/탕/찌개"), ("한식", "국수|냉면|칼국수|만두|수제비", "국수/면/만두"),
+             ("술집", "", "기타주점"), ("한식", "국밥|해장국|설렁탕|곰탕|감자탕|찌개|전골|순대|추어", "찜/탕/찌개"),
+             ("한식", "육류|고기|곱창|막창|족발|보쌈|닭", "고기구이"), ("한식", "해물|생선|회|조개|게|복어|장어", "횟집"), ("한식", "국수|냉면|칼국수|만두|수제비", "국수/면/만두"),
              ("한식", "한정식|백반|쌈밥|비빔밥", "백반/한정식"), ("한식", "", "기타한식"), ("일식", "초밥|롤|회", "스시/초밥"),
              ("일식", "돈까스|우동", "일식돈가스"), ("일식", "라멘|라면", "일식라멘"), ("일식", "", "기타일식"), ("중식", "", "기타중식"),
              ("양식", "이탈리안|파스타", "이탈리아음식"), ("양식", "프랑스", "프랑스음식"), ("양식", "피자", "피자"), ("양식", "햄버거", "버거"),
@@ -1052,6 +1052,9 @@ def main():
         (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n")
     else:
         (OUT / "robots.txt").write_text("User-agent: *\nAllow: /\n")
+    moved = [r for r in places.values() if r.get("_eatpl_cat")]
+    print(f"kakao check: {len(KCHECK)} checked, {len(moved)} recategorized, "
+          f"{sum(1 for r in places.values() if r.get('_knonfood'))} not restaurants on Kakao (no recommendation tags)")
     review_out = os.environ.get("REVIEW_OUT")
     if review_out:  # 사이트(site/)·저장소에는 넣지 않는다. 판정이 아니라 사람이 보고 판단할 목록
         seen, lines = set(), []
