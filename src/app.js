@@ -52,10 +52,12 @@
     return [t.join('').toLowerCase(), branch];
   }
   function isChainName(n) {
+    var raw = String(n || '').replace(/\s/g, '');
+    if (OPERATORS.some(function (o) { return raw.indexOf(o[0].replace(/\s/g, '')) !== -1; })) return true;
     if (!data) return false;
     var b = brandParts(n)[0];
     if (!data._chains) { data._chains = {}; (data.chains || []).forEach(function (c) { data._chains[c] = 1; }); }
-    if (data._chains[b] || (data.chainKnown || []).some(function (k) { return b.indexOf(k) === 0; })) return true;
+    if (data._chains[b] || (data.chainKnown || []).some(function (k) { return b.indexOf(k) === 0 || (k.length >= 3 && b.indexOf(k) !== -1); })) return true;
     if (/(점|지점|호점|직영점|본점)$/.test(b) && (data.chains || []).some(function (f) { return f.length >= 3 && b.indexOf(f) === 0; })) return true;
     var first = (cleanName(n).replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] || '').toLowerCase();
     return first.length >= 3 && !!data._chains[first];
@@ -69,9 +71,16 @@
       return x.replace(/\s+/g, ' ').trim();
     }).filter(Boolean);
     if (!parts.length) return String(n || '');
-    if (parts[0].length <= 2 && parts.length > 1) return parts.slice(1).sort(function (a, b) { return b.length - a.length; })[0];
-    return parts[0];
+    var name = parts[0].length <= 2 && parts.length > 1 ? parts.slice(1).sort(function (a, b) { return b.length - a.length; })[0] : parts[0];
+    for (var i = 0; i < OPERATORS.length; i++) {
+      var op = OPERATORS[i][0];
+      if (name.indexOf(op) === 0 && name.length > op.length + 1) { name = (OPERATORS[i][1] + name.slice(op.length)).trim(); break; }
+    }
+    return name;
   }
+  // 프랜차이즈 본사·운영사 이름 (build.py OPERATORS 와 같은 값)
+  var OPERATORS = [['다이닝브랜즈 그룹', ''], ['다이닝브랜즈그룹', ''], ['비케이알', ''], ['한국맥도날드', '맥도날드'], ['롯데지알에스', ''],
+    ['신세계푸드', ''], ['씨제이푸드빌', ''], ['이랜드이츠', ''], ['제너시스', ''], ['썬앳푸드', ''], ['갓텐코리아', '']];
   var MER = 'https://web.paybooc.ai/mer/web/profile/';
 
   // ---------------------------------------------------------------- sharing

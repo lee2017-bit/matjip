@@ -127,6 +127,12 @@ def esc(s) -> str:
 CORP = r"\(주\)|㈜|주식회사|\(유\)|유한회사|\(사\)|농업회사법인|영농조합법인"
 
 
+# 프랜차이즈 본사·운영사 이름 (직영점은 결제 데이터에 '운영사 + 브랜드 + 지점'으로 올라온다). 표시할 땐 떼고, 프랜차이즈로 본다.
+# Keep in sync with OPERATORS in src/app.js.
+OPERATORS = [("다이닝브랜즈 그룹", ""), ("다이닝브랜즈그룹", ""), ("비케이알", ""), ("한국맥도날드", "맥도날드"), ("롯데지알에스", ""),
+             ("신세계푸드", ""), ("씨제이푸드빌", ""), ("이랜드이츠", ""), ("제너시스", ""), ("썬앳푸드", ""), ("갓텐코리아", "")]
+
+
 def clean_name(n) -> str:
     """Readable store name from eat.pl's merNm ('(주)미진/광화문미진', '주식회사 디에프아이(꿉당 성수점)')."""
     raw = str(n or "")
@@ -141,9 +147,12 @@ def clean_name(n) -> str:
             parts.append(s)
     if not parts:
         return raw.strip()
-    if len(parts[0]) <= 2 and len(parts) > 1:
-        return max(parts[1:], key=len)
-    return parts[0]
+    name = max(parts[1:], key=len) if len(parts[0]) <= 2 and len(parts) > 1 else parts[0]
+    for op, repl in OPERATORS:
+        if name.startswith(op) and len(name) > len(op) + 1:
+            name = (repl + name[len(op):]).strip() if repl else name[len(op):].strip()
+            break
+    return name
 
 
 def score_of(r: dict) -> int:
@@ -386,8 +395,11 @@ def brand_of(r: dict) -> str:
 
 
 def is_chain(r: dict) -> bool:
+    raw = (r.get("merNm") or "").replace(" ", "")
+    if any(op.replace(" ", "") in raw for op, _ in OPERATORS):  # '다이닝브랜즈그룹 비에이치씨 선릉역점' 같은 본사 직영점
+        return True
     b, _ = brand_parts(r)
-    if b in FRANCHISE or any(b.startswith(k) for k in CHAIN_KNOWN):
+    if b in FRANCHISE or any(b.startswith(k) or (len(k) >= 3 and k in b) for k in CHAIN_KNOWN):
         return True
     # '투썸플레이스을지트윈타워점' 처럼 붙여 쓴 지점명, '하이디라오코리아 코엑스' 처럼 지점 표시가 없는 경우
     if BRANCH_RE.search(b) and any(len(f) >= 3 and b.startswith(f) for f in FRANCHISE):
